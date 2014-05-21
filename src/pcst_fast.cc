@@ -581,6 +581,137 @@ bool PCSTFast::run(std::vector<int>* result) {
     return true;
   }
 
+  if (root >= 0) {
+    // find the root cluster
+    for (size_t ii = 0; ii < clusters.size(); ++ii) {
+      if (clusters[ii].contains_root && clusters[ii].merged_into == -1) {
+        mark_edges_as_good(ii);
+        break;
+      }
+    }
+  } else {
+    for (size_t ii = 0; ii < clusters.size(); ++ii) {
+      if (clusters[ii].active) {
+        mark_edges_as_good(ii);
+      }
+    }
+  }
+
+  vector<int> phase2_result;
+  for (size_t ii = 0; ii < phase1_result.size(); ++ii) {
+    if (edge_info[phase1_result[ii]].good) {
+      phase2_result.push_back(phase1_result[ii]);
+    }
+  }
+
+  if (pruning == kSimplePruning) {
+    *result = phase2_result;
+    return true;
+  }
+
+  vector<int> phase3_result;
+  if (pruning == kGWPruning) {
+
+    //////////////////////////////////////////
+    if (verbosity_level >= 2) {
+      snprintf(output_buffer, kOutputBufferSize,
+          "Starting GW pruning, phase 2 result:\n");
+      output_function(output_buffer);
+      for (size_t ii = 0; ii < phase2_result.size(); ++ii) {
+        snprintf(output_buffer, kOutputBufferSize, "%d ", phase2_result[ii]);
+        output_function(output_buffer);
+      }
+      snprintf(output_buffer, kOutputBufferSize, "\n");
+      output_function(output_buffer);
+    }
+    //////////////////////////////////////////
+
+    phase3_neighbors.resize(n);
+    for (size_t ii = 0; ii < phase2_result.size(); ++ii) {
+      int cur_edge_index = phase2_result[ii];
+      int uu = edges[cur_edge_index].first;
+      int vv = edges[cur_edge_index].second;
+      phase3_neighbors[uu].push_back(vv);
+      phase3_neighbors[vv].push_back(uu);
+    }
+
+    for (int ii = phase2_result.size() - 1; ii >= 0; --ii) {
+      int cur_edge_index = phase2_result[ii];
+      int uu = edges[cur_edge_index].first;
+      int vv = edges[cur_edge_index].second;
+
+      if (node_deleted[uu] && node_deleted[vv]) {
+
+        //////////////////////////////////////////
+        if (verbosity_level >= 2) {
+          snprintf(output_buffer, kOutputBufferSize,
+              "Not keeping edge %d (%d, %d) because both endpoints already "
+              "deleted\n", cur_edge_index, uu, vv);
+          output_function(output_buffer);
+        }
+        //////////////////////////////////////////
+
+        continue;
+      }
+
+      if (edge_info[cur_edge_index].inactive_merge_event < 0) {
+        mark_clusters_as_necessary(uu);
+        mark_clusters_as_necessary(vv);
+        phase3_result.push_back(cur_edge_index);
+
+        //////////////////////////////////////////
+        if (verbosity_level >= 2) {
+          snprintf(output_buffer, kOutputBufferSize,
+              "Both endpoint clusters were active, so keeping edge %d "
+              "(%d, %d)\n", cur_edge_index, uu, vv);
+          output_function(output_buffer);
+        }
+        //////////////////////////////////////////
+
+      } else {
+        InactiveMergeEvent& cur_merge_event = inactive_merge_events[
+            edge_info[cur_edge_index].inactive_merge_event];
+        int inactive_cluster_index = cur_merge_event.inactive_cluster_index;
+
+        if (clusters[inactive_cluster_index].necessary) {
+          phase3_result.push_back(cur_edge_index);
+
+          //////////////////////////////////////////
+          if (verbosity_level >= 2) {
+            snprintf(output_buffer, kOutputBufferSize,
+                "One endpoint was inactive but is marked necessary (%d), so "
+                "keeping edge %d (%d, %d)\n", inactive_cluster_index,
+                cur_edge_index, uu, vv);
+            output_function(output_buffer);
+          }
+          //////////////////////////////////////////
+
+        } else {
+          int active_side_node = cur_merge_event.active_cluster_node;
+          int inactive_side_node = cur_merge_event.inactive_cluster_node;
+          mark_nodes_as_deleted(inactive_side_node, active_side_node);
+
+          //////////////////////////////////////////
+          if (verbosity_level >= 2) {
+            snprintf(output_buffer, kOutputBufferSize,
+                "One endpoint was inactive and not marked necessary (%d), so "
+                "discarding edge %d (%d, %d)\n", inactive_cluster_index,
+                cur_edge_index, uu, vv);
+            output_function(output_buffer);
+          }
+          //////////////////////////////////////////
+
+        }
+      }
+    }
+
+    *result = phase3_result;
+    return true;
+  }
+
+  snprintf(output_buffer, kOutputBufferSize,
+      "Error: unknown pruning scheme.\n");
+  output_function(output_buffer);
   return false;
 }
 
