@@ -1,5 +1,6 @@
 #include "pcst_fast.h"
 
+#include <algorithm>
 #include <cstdio>
 #include <limits>
 #include <vector>
@@ -7,6 +8,27 @@
 using cluster_approx::PCSTFast;
 using std::make_pair;
 using std::vector;
+
+
+PCSTFast::PruningMethod PCSTFast::parse_pruning_method(
+    const std::string& input) {
+  PruningMethod result = kUnknownPruning;
+  std::string input_lower(' ', input.size());
+  for (size_t ii = 0; ii < input.size(); ++ii) {
+    input_lower[ii] = tolower(input[ii]);
+  }
+
+  if (input == "none") {
+    result = kNoPruning;
+  } else if (input == "simple") {
+    result = kSimplePruning;
+  } else if (input == "gw") {
+    result = kGWPruning;
+  }
+
+  return result;
+}
+
 
 PCSTFast::PCSTFast(int n_,
                    const std::vector<std::pair<int, int> >& edges_,

@@ -1,6 +1,7 @@
 #ifndef __PCST_FAST_H__
 #define __PCST_FAST_H__
 
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -15,7 +16,10 @@ class PCSTFast {
     kNoPruning = 0,
     kSimplePruning,
     kGWPruning,
+    kUnknownPruning,
   };
+
+  static PruningMethod parse_pruning_method(const std::string& input);
 
   PCSTFast(int n_,
            const std::vector<std::pair<int, int> >& edges_,
