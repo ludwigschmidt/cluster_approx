@@ -1,0 +1,591 @@
+#include "pcst_fast.h"
+
+#include <cstdio>
+#include <limits>
+#include <vector>
+
+using cluster_approx::PCSTFast;
+using std::make_pair;
+using std::vector;
+
+PCSTFast::PCSTFast(int n_,
+                   const std::vector<std::pair<int, int> >& edges_,
+                   const std::vector<double>& prizes_,
+                   const std::vector<double>& costs_,
+                   int root_,
+                   int target_num_active_clusters_,
+                   PruningMethod pruning_,
+                   int verbosity_level_,
+                   void (*output_function_)(const char*))
+    : n(n_), edges(edges_), prizes(prizes_), costs(costs_), root(root_),
+      target_num_active_clusters(target_num_active_clusters_),
+      pruning(pruning_), verbosity_level(verbosity_level_),
+      output_function(output_function_) {
+    
+    edge_parts.resize(2 * edges.size());
+    node_deleted.resize(n, false);
+
+    edge_info.resize(edges_.size());
+    for (size_t ii = 0; ii < edge_info.size(); ++ii) {
+      edge_info[ii].inactive_merge_event = -1;
+      edge_info[ii].good = false;
+    }
+
+    current_time = 0.0;
+    // TODO: set to min input value / 2.0?
+    eps = 1e-6;
+
+    for (int ii = 0; ii < n; ++ii) {
+      clusters.push_back(Cluster(&pairing_heap_buffer));
+      clusters[ii].active_start_time = 0.0;
+      clusters[ii].active_end_time = -1.0;
+      if (ii == root) {
+        clusters[ii].active_end_time = 0.0;
+      }
+      clusters[ii].merge_time = -1.0;
+      if (ii != root) {
+        clusters[ii].becoming_inactive_time = prizes[ii];
+      } else {
+        clusters[ii].becoming_inactive_time = 0.0;
+      }
+      clusters[ii].merged_into = -1;
+      clusters[ii].prize_sum = prizes[ii];
+      clusters[ii].subcluster_moat_sum = 0.0;
+      clusters[ii].active = (ii != root);
+      clusters[ii].moat = 0.0;
+      clusters[ii].contains_root = (ii == root);
+      clusters[ii].skip_up = -1;
+      clusters[ii].skip_up_sum = 0.0;
+      clusters[ii].merged_along = -1;
+      clusters[ii].child_cluster_1 = -1;
+      clusters[ii].child_cluster_2 = -1;
+      clusters[ii].necessary = false;
+
+      if (clusters[ii].active) {
+        clusters_deactivation.insert(clusters[ii].becoming_inactive_time, ii);
+      }
+    }
+  
+  for (int ii = 0; ii < static_cast<int>(edges.size()); ++ii) {
+    int uu = edges[ii].first;
+    int vv = edges[ii].second;
+    double cost = costs[ii];
+    EdgePart& uu_part = edge_parts[2 * ii];
+    EdgePart& vv_part = edge_parts[2 * ii + 1];
+    Cluster& uu_cluster = clusters[uu];
+    Cluster& vv_cluster = clusters[vv];
+
+    uu_part.deleted = false;
+    vv_part.deleted = false;
+
+    if (uu_cluster.active && vv_cluster.active) {
+      double event_time = cost / 2.0;
+      uu_part.next_event_time = event_time;
+      uu_part.next_event_val = event_time;
+      vv_part.next_event_time = event_time;
+      vv_part.next_event_val = event_time;
+    } else if (uu_cluster.active) {
+      uu_part.next_event_time = cost;
+      uu_part.next_event_val = cost;
+      vv_part.next_event_time = 0.0;
+      vv_part.next_event_val = 0.0;
+    } else if (vv_cluster.active) {
+      uu_part.next_event_time = 0.0;
+      uu_part.next_event_val = 0.0;
+      vv_part.next_event_time = cost;
+      vv_part.next_event_val = cost;
+    } else {
+      uu_part.next_event_time = 0.0;
+      uu_part.next_event_val = 0.0;
+      vv_part.next_event_time = 0.0;
+      vv_part.next_event_val = 0.0;
+    }
+
+    uu_part.heap_node = uu_cluster.edge_parts.insert(
+        uu_part.next_event_time, 2 * ii);
+    vv_part.heap_node = vv_cluster.edge_parts.insert(
+        vv_part.next_event_time, 2 * ii + 1);
+  }
+
+  for (int ii = 0; ii < n; ++ii) {
+    if (clusters[ii].active) {
+      if (!clusters[ii].edge_parts.is_empty()) {
+        double val;
+        int edge_part;
+        clusters[ii].edge_parts.get_min(&val, &edge_part);
+        clusters_next_edge_event.insert(val, ii);
+      }
+    }
+  }
+}
+
+void PCSTFast::get_next_edge_event(double* next_time,
+                                   int* next_cluster_index,
+                                   int* next_edge_part_index) {
+  if (clusters_next_edge_event.is_empty()) {
+    *next_time = std::numeric_limits<double>::infinity();
+    *next_cluster_index = -1;
+    *next_edge_part_index = -1;
+    return;
+  }
+
+  clusters_next_edge_event.get_min(next_time, next_cluster_index);
+  clusters[*next_cluster_index].edge_parts.get_min(next_time,
+                                                   next_edge_part_index);
+}
+
+void PCSTFast::remove_next_edge_event(int next_cluster_index) {
+  clusters_next_edge_event.delete_element(next_cluster_index);
+  double tmp_value;
+  int tmp_edge_part;
+  clusters[next_cluster_index].edge_parts.delete_min(&tmp_value,
+                                                     &tmp_edge_part);
+  if (!clusters[next_cluster_index].edge_parts.is_empty()) {
+    clusters[next_cluster_index].edge_parts.get_min(&tmp_value, &tmp_edge_part);
+    clusters_next_edge_event.insert(tmp_value, next_cluster_index);
+  }
+}
+
+void PCSTFast::get_next_cluster_event(double* next_time,
+                                      int* next_cluster_index) {
+  if (clusters_deactivation.is_empty()) {
+    *next_time = std::numeric_limits<double>::infinity();
+    *next_cluster_index = -1;
+    return;
+  }
+
+  clusters_deactivation.get_min(next_time, next_cluster_index);
+}
+
+void PCSTFast::remove_next_cluster_event() {
+  double tmp_value;
+  int tmp_cluster;
+  clusters_deactivation.delete_min(&tmp_value, &tmp_cluster);
+}
+
+void PCSTFast::get_sum_on_edge_part(int edge_part_index,
+                                    double* total_sum,
+                                    double* finished_moat_sum,
+                                    int* cur_cluster_index) {
+  int endpoint = edges[edge_part_index / 2].first;
+  if (edge_part_index % 2 == 1) {
+    endpoint = edges[edge_part_index / 2].second;
+  }
+
+  *total_sum = 0.0;
+  *cur_cluster_index = endpoint;
+  path_compression_visited.resize(0);
+
+  while (clusters[*cur_cluster_index].merged_into != -1) {
+    path_compression_visited.push_back(make_pair(*cur_cluster_index,
+                                                 *total_sum));
+    if (clusters[*cur_cluster_index].skip_up >= 0) {
+      *total_sum += clusters[*cur_cluster_index].skip_up_sum;
+      *cur_cluster_index = clusters[*cur_cluster_index].skip_up;
+    } else {
+      *total_sum += clusters[*cur_cluster_index].moat;
+      *cur_cluster_index = clusters[*cur_cluster_index].merged_into;
+    }
+  }
+
+  for (int ii = 0; ii < static_cast<int>(path_compression_visited.size());
+      ++ii) {
+    int visited_cluster_index = path_compression_visited[ii].first;
+    double visited_sum = path_compression_visited[ii].second;
+    clusters[visited_cluster_index].skip_up = *cur_cluster_index;
+    clusters[visited_cluster_index].skip_up_sum = *total_sum - visited_sum;
+  }
+
+  if (clusters[*cur_cluster_index].active) {
+    *finished_moat_sum = *total_sum;
+    *total_sum += current_time - clusters[*cur_cluster_index].active_start_time;
+  } else {
+    *total_sum += clusters[*cur_cluster_index].moat;
+    *finished_moat_sum = *total_sum;
+  }
+}
+
+void PCSTFast::mark_edges_as_good(int start_cluster_index) {
+  cluster_queue.resize(0);
+  int queue_index = 0;
+  cluster_queue.push_back(start_cluster_index);
+  while (queue_index < static_cast<int>(cluster_queue.size())) {
+    int cur_cluster_index = cluster_queue[queue_index];
+    queue_index += 1;
+    if (clusters[cur_cluster_index].merged_along >= 0) {
+      edge_info[clusters[cur_cluster_index].merged_along].good = true;
+      cluster_queue.push_back(clusters[cur_cluster_index].child_cluster_1);
+      cluster_queue.push_back(clusters[cur_cluster_index].child_cluster_2);
+    }
+  }
+}
+
+void PCSTFast::mark_clusters_as_necessary(int start_cluster_index) {
+  int cur_cluster_index = start_cluster_index;
+  while (!clusters[cur_cluster_index].necessary) {
+    clusters[cur_cluster_index].necessary = true;
+    if (clusters[cur_cluster_index].merged_into >= 0) {
+      cur_cluster_index = clusters[cur_cluster_index].merged_into;
+    } else {
+      return;
+    }
+  }
+}
+
+void PCSTFast::mark_nodes_as_deleted(int start_node_index,
+                                     int parent_node_index) {
+  node_deleted[start_node_index] = true;
+  cluster_queue.resize(0);
+  int queue_index = 0;
+  cluster_queue.push_back(start_node_index);
+  while (queue_index < static_cast<int>(cluster_queue.size())) {
+    int cur_node_index = cluster_queue[queue_index];
+    queue_index += 1;
+    for (int ii = 0;
+         ii < static_cast<int>(phase3_neighbors[cur_node_index].size());
+         ++ii) {
+      int next_node_index = phase3_neighbors[cur_node_index][ii];
+      if (next_node_index == parent_node_index) {
+        continue;
+      }
+      if (node_deleted[next_node_index]) {
+        // should never happen
+        continue;
+      }
+      node_deleted[next_node_index] = true;
+      cluster_queue.push_back(next_node_index);
+    }
+  }
+}
+
+bool PCSTFast::run(std::vector<int>* result) {
+  result->clear();
+
+  vector<int> phase1_result;
+  int num_active_clusters = n;
+  if (root >= 0) {
+    num_active_clusters -= 1;
+  }
+
+  while (num_active_clusters > target_num_active_clusters) {
+
+    //////////////////////////////////////////
+    if (verbosity_level >= 2) {
+      snprintf(output_buffer, kOutputBufferSize,
+          "-----------------------------------------\n");
+      output_function(output_buffer);
+    }
+    //////////////////////////////////////////
+
+
+    double next_edge_time;
+    int next_edge_cluster_index;
+    int next_edge_part_index;
+    get_next_edge_event(&next_edge_time,
+                        &next_edge_cluster_index,
+                        &next_edge_part_index);
+    double next_cluster_time;
+    int next_cluster_index;
+    get_next_cluster_event(&next_cluster_time, &next_cluster_index);
+
+    //////////////////////////////////////////
+    if (verbosity_level >= 2) {
+      snprintf(output_buffer, kOutputBufferSize,
+          "Next edge event: time %lf, cluster %d, part %d\n",
+          next_edge_time, next_edge_cluster_index, next_edge_part_index);
+      output_function(output_buffer);
+      snprintf(output_buffer, kOutputBufferSize,
+          "Next cluster event: time %lf, cluster %d\n",
+          next_cluster_time, next_cluster_index);
+      output_function(output_buffer);
+    }
+    //////////////////////////////////////////
+
+    if (next_edge_time < next_cluster_time) {
+      current_time = next_edge_time;
+      remove_next_edge_event(next_edge_cluster_index);
+
+      // collect all the relevant information about the edge parts
+      int other_edge_part_index = get_other_edge_part_index(
+          next_edge_part_index);
+
+      double current_edge_cost = costs[next_edge_part_index / 2];
+
+      double sum_current_edge_part;
+      int current_cluster_index;
+      double current_finished_moat_sum;
+      get_sum_on_edge_part(next_edge_part_index,
+                           &sum_current_edge_part,
+                           &current_finished_moat_sum,
+                           &current_cluster_index);
+      double sum_other_edge_part;
+      int other_cluster_index;
+      double other_finished_moat_sum;
+      get_sum_on_edge_part(other_edge_part_index,
+                           &sum_other_edge_part,
+                           &other_finished_moat_sum,
+                           &other_cluster_index);
+      
+      double remainder = current_edge_cost
+                         - sum_current_edge_part - sum_other_edge_part;
+
+      Cluster& current_cluster = clusters[current_cluster_index];
+      Cluster& other_cluster = clusters[other_cluster_index];
+      EdgePart& next_edge_part = edge_parts[next_edge_part_index];
+      EdgePart& other_edge_part = edge_parts[other_edge_part_index];
+
+      //////////////////////////////////////////
+      if (verbosity_level >= 2) {
+        snprintf(output_buffer, kOutputBufferSize,
+            "Edge event at time %lf, current edge part %d (cluster %d), "
+            "other edge part %d (cluster %d)\n",
+            current_time, next_edge_part_index, current_cluster_index,
+            other_edge_part_index, other_cluster_index);
+        output_function(output_buffer);
+        snprintf(output_buffer, kOutputBufferSize,
+            "Sum current part %lf, other part %lf, total length %lf, "
+            "remainder %lf\n",
+            sum_current_edge_part, sum_other_edge_part, current_edge_cost,
+            remainder);
+        output_function(output_buffer);
+      }
+      //////////////////////////////////////////
+
+      if (edge_parts[next_edge_part_index].deleted) {
+
+        //////////////////////////////////////////
+        if (verbosity_level >= 2) {
+          snprintf(output_buffer, kOutputBufferSize,
+              "Edge part already deleted, nothing to do\n");
+          output_function(output_buffer);
+        }
+        //////////////////////////////////////////
+
+        continue;
+      }
+
+      if (current_cluster_index == other_cluster_index) {
+
+        //////////////////////////////////////////
+        if (verbosity_level >= 2) {
+          snprintf(output_buffer, kOutputBufferSize,
+              "Clusters already merged, ignoring edge\n");
+          output_function(output_buffer);
+        }
+        //////////////////////////////////////////
+
+        edge_parts[other_edge_part_index].deleted = true;
+      }
+
+      if (remainder < eps) {
+        phase1_result.push_back(next_edge_part_index / 2);
+        edge_parts[other_edge_part_index].deleted = true;
+
+        int new_cluster_index = clusters.size();
+        clusters.push_back(Cluster(&pairing_heap_buffer));
+        Cluster& new_cluster = clusters[new_cluster_index];
+        // This is slightly evil because current_cluster and other_cluster
+        // mask the outside definitions. However, the outside definitons
+        // might have become invalid due to the call to push_back.
+        Cluster& current_cluster = clusters[current_cluster_index];
+        Cluster& other_cluster = clusters[other_cluster_index];
+
+        //////////////////////////////////////////
+        if (verbosity_level >= 2) {
+          snprintf(output_buffer, kOutputBufferSize,
+              "Merge %d and %d into %d\n", current_cluster_index,
+              other_cluster_index, new_cluster_index);
+          output_function(output_buffer);
+        }
+        //////////////////////////////////////////
+
+        new_cluster.moat = 0.0;
+        new_cluster.prize_sum = current_cluster.prize_sum
+                                + other_cluster.prize_sum;
+        new_cluster.subcluster_moat_sum = current_cluster.subcluster_moat_sum
+                                          + other_cluster.subcluster_moat_sum;
+        new_cluster.contains_root = current_cluster.contains_root
+                                    || other_cluster.contains_root;
+        new_cluster.active = !new_cluster.contains_root;
+        new_cluster.merged_along = next_edge_part_index / 2;
+        new_cluster.child_cluster_1 = current_cluster_index;
+        new_cluster.child_cluster_2 = other_cluster_index;
+        new_cluster.necessary = false;
+        new_cluster.skip_up = -1;
+        new_cluster.skip_up_sum = 0.0;
+        new_cluster.merge_time = -1;
+        new_cluster.merged_into = -1;
+
+        current_cluster.active = false;
+        current_cluster.active_end_time = current_time;
+        current_cluster.merged_into = new_cluster_index;
+        current_cluster.merge_time = current_time;
+        current_cluster.moat = current_cluster.active_end_time
+                               - current_cluster.active_start_time;
+        clusters_deactivation.delete_element(current_cluster_index);
+        num_active_clusters -= 1;
+        if (!current_cluster.edge_parts.is_empty()) {
+          clusters_next_edge_event.delete_element(current_cluster_index);
+        }
+
+        if (other_cluster.active) {
+          other_cluster.active = false;
+          other_cluster.active_end_time = current_time;
+          other_cluster.moat = other_cluster.active_end_time
+                               - other_cluster.active_start_time;
+          clusters_deactivation.delete_element(other_cluster_index);
+          if (!other_cluster.edge_parts.is_empty()) {
+            clusters_next_edge_event.delete_element(other_cluster_index);
+          }
+          num_active_clusters -= 1;
+        } else {
+          double edge_event_update_time = current_time
+                                          - other_cluster.active_end_time;
+          other_cluster.edge_parts.add_to_heap(edge_event_update_time);
+          if (!other_cluster.contains_root) {
+            inactive_merge_events.push_back(InactiveMergeEvent());
+            InactiveMergeEvent& merge_event =
+                inactive_merge_events[inactive_merge_events.size() - 1];
+
+            merge_event.active_cluster_index = current_cluster_index;
+            merge_event.inactive_cluster_index = other_cluster_index;
+            int active_node_part = edges[next_edge_part_index / 2].first;
+            int inactive_node_part = edges[next_edge_part_index / 2].second;
+            if (next_edge_part_index % 2 == 1) {
+              std::swap(active_node_part, inactive_node_part);
+            }
+            merge_event.active_cluster_node = active_node_part;
+            merge_event.inactive_cluster_node = inactive_node_part;
+            edge_info[next_edge_part_index / 2].inactive_merge_event =
+                inactive_merge_events.size() - 1;
+
+          }
+        }
+        other_cluster.merged_into = new_cluster_index;
+        other_cluster.merge_time = current_time;
+
+        new_cluster.edge_parts = PairingHeapType::meld(
+            &(current_cluster.edge_parts), &(other_cluster.edge_parts));
+
+        new_cluster.subcluster_moat_sum += current_cluster.moat;
+        new_cluster.subcluster_moat_sum += other_cluster.moat;
+
+        if (new_cluster.active) {
+          new_cluster.active_start_time = current_time;
+          new_cluster.becoming_inactive_time = current_time
+                                           + new_cluster.prize_sum
+                                           - new_cluster.subcluster_moat_sum;
+          clusters_deactivation.insert(new_cluster.becoming_inactive_time,
+                                       new_cluster_index);
+          if (!new_cluster.edge_parts.is_empty()) {
+            double tmp_val;
+            int tmp_index;
+            new_cluster.edge_parts.get_min(&tmp_val, &tmp_index);
+            clusters_next_edge_event.insert(tmp_val, new_cluster_index);
+          }
+          num_active_clusters += 1;
+        }
+      } else if (other_cluster.active) {
+        double next_event_time = current_time + remainder / 2.0;
+        next_edge_part.next_event_time = next_event_time;
+        next_edge_part.next_event_val = sum_current_edge_part + remainder / 2.0;
+        if (!current_cluster.edge_parts.is_empty()) {
+          clusters_next_edge_event.delete_element(current_cluster_index);
+        }
+        next_edge_part.heap_node = current_cluster.edge_parts.insert(
+            next_event_time, next_edge_part_index);
+        double tmp_val;
+        int tmp_index;
+        current_cluster.edge_parts.get_min(&tmp_val, &tmp_index);
+        clusters_next_edge_event.insert(tmp_val, current_cluster_index);
+
+        other_edge_part.next_event_time = next_event_time;
+        clusters_next_edge_event.delete_element(other_cluster_index);
+        other_cluster.edge_parts.decrease_key(
+            other_edge_part.heap_node,
+            other_cluster.active_start_time + other_edge_part.next_event_val
+                                            - other_finished_moat_sum,
+            next_event_time);
+        other_cluster.edge_parts.get_min(&tmp_val, &tmp_index);
+        clusters_next_edge_event.insert(tmp_val, other_cluster_index);
+        other_edge_part.next_event_val = sum_other_edge_part + remainder / 2.0;
+
+        //////////////////////////////////////////
+        if (verbosity_level >= 2) {
+          snprintf(output_buffer, kOutputBufferSize,
+              "Added new event at time %lf\n", next_event_time);
+          output_function(output_buffer);
+        }
+        //////////////////////////////////////////
+      } else {
+        double next_event_time = current_time + remainder;
+        next_edge_part.next_event_time = next_event_time;
+        next_edge_part.next_event_val = current_edge_cost
+                                        - other_finished_moat_sum;
+        if (!current_cluster.edge_parts.is_empty()) {
+          clusters_next_edge_event.delete_element(current_cluster_index);
+        }
+        next_edge_part.heap_node = current_cluster.edge_parts.insert(
+            next_event_time, next_edge_part_index);
+        double tmp_val;
+        int tmp_index;
+        current_cluster.edge_parts.get_min(&tmp_val, &tmp_index);
+        clusters_next_edge_event.insert(tmp_val, current_cluster_index);
+        
+        other_edge_part.next_event_time = other_cluster.active_end_time;
+        other_cluster.edge_parts.decrease_key(
+            other_edge_part.heap_node,
+            other_cluster.active_end_time + other_edge_part.next_event_val
+                                          - other_finished_moat_sum,
+            other_cluster.active_end_time);
+        other_edge_part.next_event_val = other_finished_moat_sum;
+
+        //////////////////////////////////////////
+        if (verbosity_level >= 2) {
+          snprintf(output_buffer, kOutputBufferSize,
+              "Added new event at time %lf and and event for inactive edge "
+              "part\n", next_event_time);
+          output_function(output_buffer);
+        }
+        //////////////////////////////////////////
+      }
+    } else {
+      // cluster deactivation is first
+
+      current_time = next_cluster_time;
+      remove_next_cluster_event();
+      
+      Cluster& cur_cluster = clusters[next_cluster_index];
+      cur_cluster.active = false;
+      cur_cluster.active_end_time = current_time;
+      cur_cluster.moat = cur_cluster.active_end_time
+                         - cur_cluster.active_start_time;
+      if (!cur_cluster.edge_parts.is_empty()) {
+        clusters_next_edge_event.delete_element(next_cluster_index);
+      }
+      num_active_clusters -= 1;
+
+      //////////////////////////////////////////
+      if (verbosity_level >= 2) {
+        snprintf(output_buffer, kOutputBufferSize,
+            "Cluster deactivation: cluster %d at time %lf (moat size %lf)\n",
+            next_cluster_index, current_time, cur_cluster.moat);
+        output_function(output_buffer);
+      }
+      //////////////////////////////////////////
+    }
+  }
+
+  if (pruning == kNoPruning) {
+    *result = phase1_result;
+    return true;
+  }
+
+  return false;
+}
+
+PCSTFast::~PCSTFast() {
+  for (size_t ii = 0; ii < clusters.size(); ++ii) {
+    clusters[ii].edge_parts.release_memory();
+  }
+}
