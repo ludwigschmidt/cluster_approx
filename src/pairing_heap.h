@@ -1,6 +1,8 @@
 #ifndef __PAIRING_HEAP_H__
 #define __PAIRING_HEAP_H__
 
+// TODO: remove printfs
+//#include <cstdio>
 #include <cstdlib>
 #include <vector>
 
@@ -53,6 +55,8 @@ class PairingHeap {
 
   bool get_min(ValueType* value, PayloadType* payload) {
     if (root != NULL) {
+      //printf("In get_min, current root: %x\n", root);
+      //fflush(stdout);
       *value = root->value;
       *payload = root->payload;
       return true;
@@ -103,12 +107,16 @@ class PairingHeap {
     if (root == NULL) {
       return false;
     }
+    //printf("In delete_min, root is %x (payload %d)\n", root, root->payload);
+    //fflush(stdout);
     Node* result = root;
     buffer->resize(0);
     Node* cur_child = root->child;
     Node* next_child = NULL;
     while (cur_child != NULL) {
       buffer->push_back(cur_child);
+      //printf("In delete_min, added child %x to buffer\n", cur_child);
+      //fflush(stdout);
       next_child = cur_child->sibling;
       cur_child->left_up = NULL;
       cur_child->sibling = NULL;
@@ -116,6 +124,9 @@ class PairingHeap {
       cur_child->child_offset += result->child_offset;
       cur_child = next_child;
     }
+
+    //printf("In delete_min, root hat %lu children\n", buffer->size());
+    //fflush(stdout);
 
     size_t merged_children = 0;
     while (merged_children + 2 <= buffer->size()) {
@@ -141,6 +152,9 @@ class PairingHeap {
 
     *value = result->value;
     *payload = result->payload;
+    //printf("In delete_min, deleting %x\n", result);
+    //printf("In delete_min, new root: %x\n", root);
+    //fflush(stdout);
     delete result;
     return true;
   }
@@ -170,6 +184,9 @@ class PairingHeap {
       smaller_node = node1;
       larger_node = node2;
     }
+    //printf("Linking %x (smaller node) and %x (larger node)\n",
+    //    smaller_node, larger_node);
+    //fflush(stdout);
     larger_node->sibling = smaller_node->child;
     if (larger_node->sibling != NULL) {
       larger_node->sibling->left_up = larger_node;

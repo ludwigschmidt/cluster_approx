@@ -397,6 +397,8 @@ bool PCSTFast::run(std::vector<int>* result) {
         //////////////////////////////////////////
 
         edge_parts[other_edge_part_index].deleted = true;
+
+        continue;
       }
 
       if (remainder < eps) {
