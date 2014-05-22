@@ -701,8 +701,8 @@ bool PCSTFast::run(std::vector<int>* result) {
 
         if (clusters[inactive_cluster_index].necessary) {
           phase3_result.push_back(cur_edge_index);
-          mark_cluster_as_necessary(inactive_side_node);
-          mark_cluster_as_necessary(active_side_node);
+          mark_clusters_as_necessary(inactive_side_node);
+          mark_clusters_as_necessary(active_side_node);
 
           //////////////////////////////////////////
           if (verbosity_level >= 2) {
