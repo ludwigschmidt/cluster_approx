@@ -139,7 +139,7 @@ int main() {
   PCSTFast::PruningMethod pruning = PCSTFast::kGWPruning;
   int verbosity_level = 2;*/
 
-  int n = 10;
+  /*int n = 10;
   vector<pair<int, int> > edges;
   edges.push_back(make_pair(0, 1));
   edges.push_back(make_pair(1, 2));
@@ -203,6 +203,37 @@ int main() {
   costs.push_back(0.8);
   int root = 3;
   int target_num_active_clusters = 0;
+  PCSTFast::PruningMethod pruning = PCSTFast::kGWPruning;
+  int verbosity_level = 2;*/
+
+  int n = 8;
+  vector<pair<int, int> > edges;
+  edges.push_back(make_pair(0, 1));
+  edges.push_back(make_pair(1, 2));
+  edges.push_back(make_pair(2, 3));
+  edges.push_back(make_pair(3, 4));
+  edges.push_back(make_pair(4, 5));
+  edges.push_back(make_pair(5, 6));
+  edges.push_back(make_pair(6, 7));
+  vector<double> prizes;
+  prizes.push_back(100.0);
+  prizes.push_back(0.0);
+  prizes.push_back(0.0);
+  prizes.push_back(1.0);
+  prizes.push_back(0.0);
+  prizes.push_back(0.0);
+  prizes.push_back(0.0);
+  prizes.push_back(100.0);
+  vector<double> costs;
+  costs.push_back(0.9);
+  costs.push_back(0.9);
+  costs.push_back(0.9);
+  costs.push_back(0.9);
+  costs.push_back(0.9);
+  costs.push_back(0.9);
+  costs.push_back(0.9);
+  int root = -1;
+  int target_num_active_clusters = 1;
   PCSTFast::PruningMethod pruning = PCSTFast::kGWPruning;
   int verbosity_level = 2;
 
