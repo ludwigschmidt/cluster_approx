@@ -695,10 +695,14 @@ bool PCSTFast::run(std::vector<int>* result) {
       } else {
         InactiveMergeEvent& cur_merge_event = inactive_merge_events[
             edge_info[cur_edge_index].inactive_merge_event];
+        int active_side_node = cur_merge_event.active_cluster_node;
+        int inactive_side_node = cur_merge_event.inactive_cluster_node;
         int inactive_cluster_index = cur_merge_event.inactive_cluster_index;
 
         if (clusters[inactive_cluster_index].necessary) {
           phase3_result.push_back(cur_edge_index);
+          mark_cluster_as_necessary(inactive_side_node);
+          mark_cluster_as_necessary(active_side_node);
 
           //////////////////////////////////////////
           if (verbosity_level >= 2) {
@@ -711,8 +715,6 @@ bool PCSTFast::run(std::vector<int>* result) {
           //////////////////////////////////////////
 
         } else {
-          int active_side_node = cur_merge_event.active_cluster_node;
-          int inactive_side_node = cur_merge_event.inactive_cluster_node;
           mark_nodes_as_deleted(inactive_side_node, active_side_node);
 
           //////////////////////////////////////////
