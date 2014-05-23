@@ -19,6 +19,8 @@ class PCSTFast {
     kUnknownPruning,
   };
 
+  const static int kNoRoot = -1;
+
   static PruningMethod parse_pruning_method(const std::string& input);
 
   PCSTFast(int n_,

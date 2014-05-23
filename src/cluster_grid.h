@@ -1,0 +1,47 @@
+#ifndef __CLUSTER_GRID_H__
+#define __CLUSTER_GRID_H__
+
+#include <utility>
+#include <vector>
+
+namespace cluster_approx {
+
+typedef std::vector<std::vector<double> > Matrix2d;
+typedef std::vector<std::vector<bool> > Matrix2b;
+typedef std::pair<int, int> EdgePair;
+
+
+void build_grid_graph(const Matrix2d& values,
+                      bool include_root,
+                      double gamma,
+                      int* n,
+                      std::vector<EdgePair>* edges,
+                      std::vector<double>* prizes,
+                      std::vector<double>* costs,
+                      int* root);
+
+
+void convert_forest_to_support(const std::vector<int>& forest_indices,
+                               const std::vector<EdgePair>& edges,
+                               int root,
+                               int width,
+                               int height,
+                               Matrix2b* result,
+                               int* result_sparsity);
+
+
+bool cluster_grid_pcst(const Matrix2d& values,
+                       int target_num_clusters,
+                       double lambda,
+                       bool include_root,
+                       double gamma,
+                       int verbosity_level,
+                       void (*output_function_)(const char*),
+                       Matrix2b* result,
+                       int* result_sparsity);
+
+
+}  // namespace cluster_approx
+
+
+#endif
