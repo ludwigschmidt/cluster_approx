@@ -2,5 +2,7 @@
 *.swo
 *.swm
 *.swn
+*.mexa64
+*.mexmaci64
 .deps
 obj
