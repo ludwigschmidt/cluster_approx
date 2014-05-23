@@ -27,12 +27,11 @@ mexfiles: cluster_grid_pcst_mexfile
 
 CLUSTER_GRID_OBJS = cluster_grid.o pcst_fast.o
 
-CLUSTER_GRID_MEXFILE_OBJS = $(CLUSTER_GRID_OBJS)
-CLUSTER_GRID_MEXFILE_SRC = cluster_grid_pcst_mex_wrapper.cc
+CLUSTER_GRID_MEXFILE_SRC = cluster_grid_pcst_mex_wrapper.cc cluster_grid.cc pcst_fast.cc
 CLUSTER_GRID_MEXFILE_SRC_DEPS = $(CLUSTER_GRID_MEXFILE_SRC) mex_helper.h cluster_grid.h
 
-cluster_grid_pcst_mexfile: $(CLUSTER_GRID_MEXFILE_OBJS:%=$(OBJDIR)/%) $(CLUSTER_GRID_MEXFILE_SRC_DEPS:%=$(SRCDIR)/%)
-	$(MEX) -v CXXFLAGS="\$$CXXFLAGS $(MEXCXXFLAGS)" -output cluster_grid_pcst $(SRCDIR)/$(CLUSTER_GRID_MEXFILE_SRC) $(CLUSTER_GRID_MEXFILE_OBJS:%=$(OBJDIR)/%)
+cluster_grid_pcst_mexfile: $(CLUSTER_GRID_MEXFILE_SRC_DEPS:%=$(SRCDIR)/%)
+	$(MEX) -v CXXFLAGS="\$$CXXFLAGS $(MEXCXXFLAGS)" -output cluster_grid_pcst $(CLUSTER_GRID_MEXFILE_SRC:%=$(SRCDIR)/%)
 
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.cc
