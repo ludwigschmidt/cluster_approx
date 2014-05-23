@@ -5,7 +5,6 @@
 #include "cluster_grid.h"
 
 using cluster_approx::cluster_grid_pcst;
-using std::make_pair;
 using std::vector;
 
 void output_function(const char* output) {
