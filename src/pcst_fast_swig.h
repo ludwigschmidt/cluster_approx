@@ -3,6 +3,7 @@
 
 #include <cstdio>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "pcst_fast.h"
@@ -14,21 +15,23 @@ void output_function(const char* output) {
   fflush(stdout);
 }
 
-std::vector<int> pcst_fast(int n,
-                           const std::vector<std::pair<int, int> >& edges,
-                           const std::vector<double>& prizes,
-                           const std::vector<double>& costs,
-                           int root,
-                           int num_clusters,
-                           const std::string& pruning,
-                           int verbosity_level) {
+std::pair<std::vector<int>, std::vector<int> > pcst_fast(
+    int n,
+    const std::vector<std::pair<int, int> >& edges,
+    const std::vector<double>& prizes,
+    const std::vector<double>& costs,
+    int root,
+    int num_clusters,
+    const std::string& pruning,
+    int verbosity_level) {
   PCSTFast::PruningMethod pruning_method =
       PCSTFast::parse_pruning_method(pruning);
   PCSTFast algo(n, edges, prizes, costs, root, num_clusters,
                 pruning_method, verbosity_level, output_function);
-  std::vector<int> result;
-  algo.run(&result);
-  return result;
+  std::vector<int> result_nodes;
+  std::vector<int> result_edges;
+  algo.run(&result_nodes, &result_edges);
+  return std::make_pair(result_nodes, result_edges);
 }
 
 }  // namespace cluster_approx

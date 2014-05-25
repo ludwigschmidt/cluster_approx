@@ -12,6 +12,7 @@ namespace std {
   %template(DoubleVector) vector<double>;
   %template(IntVector) vector<int>;
   %template(EdgeVector) vector<pair<int, int> >;
+  %template(ResultPair) pair<vector<int>, vector<int> >;
 }
 
 %ignore output_function;
