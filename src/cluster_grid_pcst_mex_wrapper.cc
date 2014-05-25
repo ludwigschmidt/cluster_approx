@@ -9,8 +9,10 @@
 
 #include "cluster_grid.h"
 #include "mex_helper.h"
+#include "pcst_fast.h"
 
 using cluster_approx::cluster_grid_pcst;
+using cluster_approx::PCSTFast;
 using std::make_pair;
 using std::set;
 using std::string;
@@ -54,14 +56,16 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   bool include_root = false;
   double gamma = -1.0;
   int verbosity_level = 0;
+  PCSTFast::PruningMethod pruning = PCSTFast::kGWPruning;
 
   if (nrhs == 4) {
     const mxArray* opts = prhs[3];
 
     // set of accepted options
     set<string> known_options;
-    known_options.insert("verbose");
     known_options.insert("gamma");
+    known_options.insert("pruning");
+    known_options.insert("verbose");
 
     // retrieve option struct fields
     vector<string> options;
@@ -77,11 +81,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         mexErrMsgTxt(tmp);
       }
     }
-    
-    if (has_field(opts, "verbose")
-        && !get_double_field_as_int(opts, "verbose", &verbosity_level)) {
-      mexErrMsgTxt("The verbose field must be a double value.");
-    }
 
     if (has_field(opts, "gamma")) {
       if (!get_double_field(opts, "gamma", &gamma)) {
@@ -90,13 +89,30 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         include_root = true;
       }
     }
+    
+    if (has_field(opts, "verbose")
+        && !get_double_field_as_int(opts, "verbose", &verbosity_level)) {
+      mexErrMsgTxt("The verbose field must be a double value.");
+    }
+
+    if (has_field(opts, "pruning")) {
+      string pruning_string;
+      if (!get_string_field(opts, "pruning", &pruning_string)) {
+        mexErrMsgTxt("The pruning field must be a string.");
+      }
+
+      pruning = PCSTFast::parse_pruning_method(pruning_string);
+      if (pruning == PCSTFast::kUnknownPruning) {
+        mexErrMsgTxt("Unknown pruning method.");
+      }
+    }
   }
   
   vector<vector<bool> > support;
   int result_sparsity;
 
   bool res = cluster_grid_pcst(values, target_num_clusters, lambda,
-                               include_root, gamma, verbosity_level,
+                               include_root, gamma, pruning, verbosity_level,
                                output_function, &support, &result_sparsity);
   
   if (!res) {

@@ -522,8 +522,8 @@ bool PCSTFast::run(std::vector<int>* result_nodes,
         }
         next_edge_part.heap_node = current_cluster.edge_parts.insert(
             next_event_time, next_edge_part_index);
-        double tmp_val;
-        int tmp_index;
+        double tmp_val = -1.0;
+        int tmp_index = -1;
         current_cluster.edge_parts.get_min(&tmp_val, &tmp_index);
         clusters_next_edge_event.insert(tmp_val, current_cluster_index);
 
@@ -555,8 +555,8 @@ bool PCSTFast::run(std::vector<int>* result_nodes,
         }
         next_edge_part.heap_node = current_cluster.edge_parts.insert(
             next_event_time, next_edge_part_index);
-        double tmp_val;
-        int tmp_index;
+        double tmp_val = -1.0;
+        int tmp_index = -1;
         current_cluster.edge_parts.get_min(&tmp_val, &tmp_index);
         clusters_next_edge_event.insert(tmp_val, current_cluster_index);
         

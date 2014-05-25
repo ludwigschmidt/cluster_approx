@@ -4,7 +4,7 @@
 #include <utility>
 #include <vector>
 
-#include <pcst_fast.h>
+#include "pcst_fast.h"
 
 namespace cluster_approx {
 
