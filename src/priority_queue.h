@@ -36,7 +36,7 @@ class PriorityQueue {
   }
 
   void insert(ValueType value, IndexType index) {
-    if (index >= index_to_iterator.size()) {
+    if (index >= static_cast<int>(index_to_iterator.size())) {
       index_to_iterator.resize(index + 1);
     }
     index_to_iterator[index] =
