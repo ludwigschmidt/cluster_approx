@@ -3,8 +3,10 @@
 #include <vector>
 
 #include "cluster_grid.h"
+#include "pcst_fast.h"
 
 using cluster_approx::cluster_grid_pcst;
+using cluster_approx::PCSTFast;
 using std::vector;
 
 void output_function(const char* output) {
@@ -55,8 +57,9 @@ int main() {
   int result_sparsity;
 
   bool res = cluster_grid_pcst(values, target_num_clusters, lambda,
-                               include_root, gamma, verbosity_level,
-                               output_function, &result, &result_sparsity);
+                               include_root, gamma, PCSTFast::kStrongPruning,
+                               verbosity_level, output_function, &result,
+                               &result_sparsity);
   
   if (!res) {
     printf("Error returned by cluster_grid_pcst\n");

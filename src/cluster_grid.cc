@@ -70,38 +70,23 @@ void build_grid_graph(const Matrix2d& values,
 }
 
 
-void convert_forest_to_support(const vector<int>& forest_indices,
-                               const vector<EdgePair>& edges,
+void convert_forest_to_support(const vector<int>& forest_node_indices,
                                int root,
                                int width,
                                int height,
-                               Matrix2b* result,
-                               int* result_sparsity) {
+                               Matrix2b* result) {
   result->clear();
   result->resize(height);
   for (int yy = 0; yy < height; ++yy) {
     (*result)[yy].resize(width, false);
   }
 
-  *result_sparsity = 0;
-  for (size_t ii = 0; ii < forest_indices.size(); ++ii) {
-    int uu = edges[forest_indices[ii]].first;
-    int uu_xx = uu % width;
-    int uu_yy = uu / width;
-    int vv = edges[forest_indices[ii]].second;
-    int vv_xx = vv % width;
-    int vv_yy = vv / width;
-    if (uu != root) {
-      if (!(*result)[uu_yy][uu_xx]) {
-        (*result)[uu_yy][uu_xx] = true;
-        *result_sparsity += 1;
-      }
-    }
-    if (vv != root) {
-      if (!(*result)[vv_yy][vv_xx]) {
-        (*result)[vv_yy][vv_xx] = true;
-        *result_sparsity += 1;
-      }
+  for (size_t ii = 0; ii < forest_node_indices.size(); ++ii) {
+    int node = forest_node_indices[ii];
+    if (node != root) {
+      int node_xx = node % width;
+      int node_yy = node / width;
+      (*result)[node_xx][node_yy] = true;
     }
   }
 }
@@ -112,6 +97,7 @@ bool cluster_grid_pcst(const Matrix2d& values,
                        double lambda,
                        bool include_root,
                        double gamma,
+                       PCSTFast::PruningMethod pruning,
                        int verbosity_level,
                        void (*output_function)(const char*),
                        Matrix2b* result,
@@ -133,17 +119,24 @@ bool cluster_grid_pcst(const Matrix2d& values,
     costs[ii] *= lambda;
   }
 
-  PCSTFast algo(n, edges, prizes, costs, root, target_num_clusters,
-                PCSTFast::kGWPruning, verbosity_level, output_function);
+  PCSTFast algo(n, edges, prizes, costs, root, target_num_clusters, pruning,
+                verbosity_level, output_function);
 
-  vector<int> forest_indices;
-  bool res = algo.run(&forest_indices);
+  vector<int> forest_node_indices;
+  vector<int> forest_edge_indices;
+  bool res = algo.run(&forest_node_indices, &forest_edge_indices);
   if (!res) {
     return false;
   }
   
-  convert_forest_to_support(forest_indices, edges, root, values[0].size(),
-                            values.size(), result, result_sparsity);
+  convert_forest_to_support(forest_node_indices, root, values[0].size(),
+                            values.size(), result);
+  
+  *result_sparsity = static_cast<int>(forest_node_indices.size());
+  if (include_root) {
+    *result_sparsity -= 1;
+  }
+
   return true;
 }
 

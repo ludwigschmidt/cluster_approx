@@ -4,6 +4,8 @@
 #include <utility>
 #include <vector>
 
+#include <pcst_fast.h>
+
 namespace cluster_approx {
 
 typedef std::vector<std::vector<double> > Matrix2d;
@@ -21,13 +23,11 @@ void build_grid_graph(const Matrix2d& values,
                       int* root);
 
 
-void convert_forest_to_support(const std::vector<int>& forest_indices,
-                               const std::vector<EdgePair>& edges,
+void convert_forest_to_support(const std::vector<int>& forest_node_indices,
                                int root,
                                int width,
                                int height,
-                               Matrix2b* result,
-                               int* result_sparsity);
+                               Matrix2b* result);
 
 
 bool cluster_grid_pcst(const Matrix2d& values,
@@ -35,6 +35,7 @@ bool cluster_grid_pcst(const Matrix2d& values,
                        double lambda,
                        bool include_root,
                        double gamma,
+                       PCSTFast::PruningMethod pruning,
                        int verbosity_level,
                        void (*output_function_)(const char*),
                        Matrix2b* result,

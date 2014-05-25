@@ -771,10 +771,11 @@ bool PCSTFast::run(std::vector<int>* result_nodes,
     strong_pruning_parent.resize(n, make_pair(-1, -1.0));
     strong_pruning_payoff.resize(n, -1.0);
 
-    for (int ii = 0; ii < n; ++ii) {
-      if (final_component_label[ii] == -1) {
+    for (size_t ii = 0; ii < phase2_result.size(); ++ii) {
+      int cur_node_index = edges[phase2_result[ii]].first;
+      if (final_component_label[cur_node_index] == -1) {
         final_components.push_back(std::vector<int>());
-        label_final_component(ii, final_components.size() - 1);
+        label_final_component(cur_node_index, final_components.size() - 1);
       }
     }
 
