@@ -24,6 +24,8 @@ PCSTFast::PruningMethod PCSTFast::parse_pruning_method(
     result = kSimplePruning;
   } else if (input == "gw") {
     result = kGWPruning;
+  } else if (input == "strong") {
+    result = kStrongPruning;
   }
 
   return result;
@@ -266,7 +268,7 @@ void PCSTFast::mark_nodes_as_deleted(int start_node_index,
     for (int ii = 0;
          ii < static_cast<int>(phase3_neighbors[cur_node_index].size());
          ++ii) {
-      int next_node_index = phase3_neighbors[cur_node_index][ii];
+      int next_node_index = phase3_neighbors[cur_node_index][ii].first;
       if (next_node_index == parent_node_index) {
         continue;
       }
@@ -280,8 +282,10 @@ void PCSTFast::mark_nodes_as_deleted(int start_node_index,
   }
 }
 
-bool PCSTFast::run(std::vector<int>* result) {
-  result->clear();
+bool PCSTFast::run(std::vector<int>* result_nodes,
+                   std::vector<int>* result_edges) {
+  result_nodes->clear();
+  result_edges->clear();
 
   vector<int> phase1_result;
   int num_active_clusters = n;
@@ -601,9 +605,20 @@ bool PCSTFast::run(std::vector<int>* result) {
   }
 
   if (pruning == kNoPruning) {
-    *result = phase1_result;
+    build_node_set(phase1_result, result_nodes);
+    *result_edges = phase1_result;
     return true;
   }
+
+  //////////////////////////////////////////
+  if (verbosity_level >= 2) {
+    snprintf(output_buffer, kOutputBufferSize,
+        "------------------------------------------\n");
+    output_function(output_buffer);
+    snprintf(output_buffer, kOutputBufferSize, "Starting pruning\n");
+    output_function(output_buffer);
+  }
+  //////////////////////////////////////////
 
   if (root >= 0) {
     // find the root cluster
@@ -621,7 +636,6 @@ bool PCSTFast::run(std::vector<int>* result) {
     }
   }
 
-  vector<int> phase2_result;
   for (size_t ii = 0; ii < phase1_result.size(); ++ii) {
     if (edge_info[phase1_result[ii]].good) {
       phase2_result.push_back(phase1_result[ii]);
@@ -629,11 +643,22 @@ bool PCSTFast::run(std::vector<int>* result) {
   }
 
   if (pruning == kSimplePruning) {
-    *result = phase2_result;
+    build_node_set(phase2_result, result_nodes);
+    *result_edges = phase2_result;
     return true;
   }
 
   vector<int> phase3_result;
+  phase3_neighbors.resize(n);
+  for (size_t ii = 0; ii < phase2_result.size(); ++ii) {
+    int cur_edge_index = phase2_result[ii];
+    int uu = edges[cur_edge_index].first;
+    int vv = edges[cur_edge_index].second;
+    double cur_cost = costs[cur_edge_index];
+    phase3_neighbors[uu].push_back(make_pair(vv, cur_cost));
+    phase3_neighbors[vv].push_back(make_pair(uu, cur_cost));
+  }
+
   if (pruning == kGWPruning) {
 
     //////////////////////////////////////////
@@ -649,15 +674,6 @@ bool PCSTFast::run(std::vector<int>* result) {
       output_function(output_buffer);
     }
     //////////////////////////////////////////
-
-    phase3_neighbors.resize(n);
-    for (size_t ii = 0; ii < phase2_result.size(); ++ii) {
-      int cur_edge_index = phase2_result[ii];
-      int uu = edges[cur_edge_index].first;
-      int vv = edges[cur_edge_index].second;
-      phase3_neighbors[uu].push_back(vv);
-      phase3_neighbors[vv].push_back(uu);
-    }
 
     for (int ii = phase2_result.size() - 1; ii >= 0; --ii) {
       int cur_edge_index = phase2_result[ii];
@@ -731,7 +747,99 @@ bool PCSTFast::run(std::vector<int>* result) {
       }
     }
 
-    *result = phase3_result;
+    build_phase3_node_set(result_nodes);
+    *result_edges = phase3_result;
+    return true;
+  } else if (pruning == kStrongPruning) {
+
+    //////////////////////////////////////////
+    if (verbosity_level >= 2) {
+      snprintf(output_buffer, kOutputBufferSize,
+          "Starting Strong pruning, phase 2 result:\n");
+      output_function(output_buffer);
+      for (size_t ii = 0; ii < phase2_result.size(); ++ii) {
+        snprintf(output_buffer, kOutputBufferSize, "%d ", phase2_result[ii]);
+        output_function(output_buffer);
+      }
+      snprintf(output_buffer, kOutputBufferSize, "\n");
+      output_function(output_buffer);
+    }
+    //////////////////////////////////////////
+
+    final_component_label.resize(n, -1);
+    root_component_index = -1;
+    strong_pruning_parent.resize(n, make_pair(-1, -1.0));
+    strong_pruning_payoff.resize(n, -1.0);
+
+    for (int ii = 0; ii < n; ++ii) {
+      if (final_component_label[ii] == -1) {
+        final_components.push_back(std::vector<int>());
+        label_final_component(ii, final_components.size() - 1);
+      }
+    }
+
+    for (int ii = 0; ii < static_cast<int>(final_components.size()); ++ii) {
+      
+      //////////////////////////////////////////
+      if (verbosity_level >= 2) {
+        snprintf(output_buffer, kOutputBufferSize,
+            "Strong pruning on final component %d (size %d):\n",
+            ii, static_cast<int>(final_components[ii].size()));
+        output_function(output_buffer);
+      }
+      //////////////////////////////////////////
+      
+      if (ii == root_component_index) {
+
+        //////////////////////////////////////////
+        if (verbosity_level >= 2) {
+          snprintf(output_buffer, kOutputBufferSize,
+              "Component contains root, pruning starting at %d\n", root);
+          output_function(output_buffer);
+        }
+        //////////////////////////////////////////
+
+        strong_pruning_from(root, true);
+      } else {
+
+        int best_component_root = find_best_component_root(ii);
+
+        //////////////////////////////////////////
+        if (verbosity_level >= 2) {
+          snprintf(output_buffer, kOutputBufferSize,
+              "Best start node for current component: %d, pruning from "
+              "there\n", best_component_root);
+          output_function(output_buffer);
+        }
+        //////////////////////////////////////////
+
+        strong_pruning_from(best_component_root, true);
+      }
+    }
+
+    for (int ii = 0; ii < static_cast<int>(phase2_result.size()); ++ii) {
+      int cur_edge_index = phase2_result[ii];
+      int uu = edges[cur_edge_index].first;
+      int vv = edges[cur_edge_index].second;
+
+      if (node_deleted[uu] || node_deleted[vv]) {
+
+        //////////////////////////////////////////
+        if (verbosity_level >= 2) {
+          snprintf(output_buffer, kOutputBufferSize,
+              "Not keeping edge %d (%d, %d) because at least one endpoint "
+              "already deleted\n", cur_edge_index, uu, vv);
+          output_function(output_buffer);
+        }
+        //////////////////////////////////////////
+
+      } else {
+        phase3_result.push_back(cur_edge_index);
+      }
+    }
+
+    build_phase3_node_set(result_nodes);
+    *result_edges = phase3_result;
     return true;
   }
 
@@ -740,6 +848,171 @@ bool PCSTFast::run(std::vector<int>* result) {
   output_function(output_buffer);
   return false;
 }
+
+
+void PCSTFast::label_final_component(int start_node_index,
+                                     int new_component_index) {
+  cluster_queue.resize(0);
+  cluster_queue.push_back(start_node_index);
+  final_component_label[start_node_index] = new_component_index;
+
+  int queue_next = 0;
+  while (queue_next < static_cast<int>(cluster_queue.size())) {
+    int cur_node_index = cluster_queue[queue_next];
+    queue_next += 1;
+    final_components[new_component_index].push_back(cur_node_index);
+    if (cur_node_index == root) {
+      root_component_index = new_component_index;
+    }
+    for (size_t ii = 0; ii < phase3_neighbors[cur_node_index].size(); ++ii) {
+      int next_node_index = phase3_neighbors[cur_node_index][ii].first;
+      if (final_component_label[next_node_index] == -1) {
+        cluster_queue.push_back(next_node_index);
+        final_component_label[next_node_index] = new_component_index;
+      }
+    }
+  }
+}
+
+
+void PCSTFast::strong_pruning_from(int start_node_index,
+                                   bool mark_as_deleted) {
+  stack.resize(0);
+  stack.push_back(make_pair(true, start_node_index));
+  strong_pruning_parent[start_node_index] = make_pair(-1, 0.0);
+  
+  while (!stack.empty()) {
+    bool begin = stack.back().first;
+    int cur_node_index = stack.back().second;
+    stack.pop_back();
+
+    if (begin) {
+      stack.push_back(make_pair(false, cur_node_index));
+      for (size_t ii = 0; ii < phase3_neighbors[cur_node_index].size(); ++ii) {
+        int next_node_index = phase3_neighbors[cur_node_index][ii].first;
+        double next_cost = phase3_neighbors[cur_node_index][ii].second;
+
+        if (next_node_index == strong_pruning_parent[cur_node_index].first) {
+          continue;
+        }
+
+        strong_pruning_parent[next_node_index].first = cur_node_index;
+        strong_pruning_parent[next_node_index].second = next_cost;
+        stack.push_back(make_pair(true, next_node_index));
+      }
+    } else {
+      strong_pruning_payoff[cur_node_index] = prizes[cur_node_index];
+      for (size_t ii = 0; ii < phase3_neighbors[cur_node_index].size(); ++ii) {
+        int next_node_index = phase3_neighbors[cur_node_index][ii].first;
+        double next_cost = phase3_neighbors[cur_node_index][ii].second;
+
+        if (next_node_index == strong_pruning_parent[cur_node_index].first) {
+          continue;
+        }
+        
+        double next_payoff = strong_pruning_payoff[next_node_index] - next_cost;
+        if (next_payoff <= 0.0) {
+          if (mark_as_deleted) {
+
+            //////////////////////////////////////////
+            if (verbosity_level >= 2) {
+              snprintf(output_buffer, kOutputBufferSize,
+                  "Subtree starting at %d has a nonpositive contribution of "
+                  "%lf, pruning (good side: %d)\n", next_node_index,
+                  next_payoff,  cur_node_index);
+              output_function(output_buffer);
+            }
+            //////////////////////////////////////////
+            
+            mark_nodes_as_deleted(next_node_index, cur_node_index);
+          }
+        } else {
+          strong_pruning_payoff[cur_node_index] += next_payoff;
+        }
+      }
+    }
+  }
+}
+
+
+int PCSTFast::find_best_component_root(int component_index) {
+  int cur_best_root_index = final_components[component_index][0];
+  strong_pruning_from(cur_best_root_index, false);
+  double cur_best_value = strong_pruning_payoff[cur_best_root_index];
+
+  stack2.resize(0);
+  for (size_t ii = 0; ii < phase3_neighbors[cur_best_root_index].size(); ++ii) {
+    stack2.push_back(phase3_neighbors[cur_best_root_index][ii].first);
+  }
+
+  while (!stack2.empty()) {
+    int cur_node_index = stack2.back();
+    stack2.pop_back();
+    int cur_parent_index = strong_pruning_parent[cur_node_index].first;
+    double parent_edge_cost = strong_pruning_parent[cur_node_index].second;
+    double parent_val_without_cur_node =
+        strong_pruning_payoff[cur_parent_index];
+    double cur_node_net_payoff = strong_pruning_payoff[cur_node_index]
+                                 - parent_edge_cost;
+    if (cur_node_net_payoff > 0.0) {
+      parent_val_without_cur_node -= cur_node_net_payoff;
+    }
+    if (parent_val_without_cur_node > parent_edge_cost) {
+      strong_pruning_payoff[cur_node_index] += (parent_val_without_cur_node
+                                                - parent_edge_cost);
+    }
+    if (strong_pruning_payoff[cur_node_index] > cur_best_value) {
+      cur_best_root_index = cur_node_index;
+      cur_best_value = strong_pruning_payoff[cur_node_index];
+    }
+    for (size_t ii = 0; ii < phase3_neighbors[cur_node_index].size(); ++ii) {
+      int next_node_index = phase3_neighbors[cur_node_index][ii].first;
+      if (next_node_index != cur_parent_index) {
+        stack2.push_back(next_node_index);
+      }
+    }
+  }
+
+  return cur_best_root_index;
+}
+
+
+void PCSTFast::build_phase3_node_set(std::vector<int>* node_set) {
+  vector<int> included(n, false);
+  node_set->clear();
+  for (size_t ii = 0; ii < phase2_result.size(); ++ii) {
+    int uu = edges[phase2_result[ii]].first;
+    int vv = edges[phase2_result[ii]].second;
+    if (!node_deleted[uu] && !included[uu]) {
+      included[uu] = true;
+      node_set->push_back(uu);
+    }
+    if (!node_deleted[vv] && !included[vv]) {
+      included[vv] = true;
+      node_set->push_back(vv);
+    }
+  }
+}
+
+
+void PCSTFast::build_node_set(const std::vector<int>& edge_set,
+                              std::vector<int>* node_set) {
+  vector<int> included(n, false);
+  node_set->clear();
+  for (size_t ii = 0; ii < edge_set.size(); ++ii) {
+    int uu = edges[edge_set[ii]].first;
+    int vv = edges[edge_set[ii]].second;
+    if (!included[uu]) {
+      included[uu] = true;
+      node_set->push_back(uu);
+    }
+    if (!included[vv]) {
+      included[vv] = true;
+      node_set->push_back(vv);
+    }
+  }
+}
+
 
 PCSTFast::~PCSTFast() {
   for (size_t ii = 0; ii < clusters.size(); ++ii) {

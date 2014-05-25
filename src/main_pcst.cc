@@ -206,7 +206,7 @@ int main() {
   PCSTFast::PruningMethod pruning = PCSTFast::kGWPruning;
   int verbosity_level = 2;*/
 
-  int n = 8;
+  /*int n = 8;
   vector<pair<int, int> > edges;
   edges.push_back(make_pair(0, 1));
   edges.push_back(make_pair(1, 2));
@@ -235,17 +235,46 @@ int main() {
   int root = -1;
   int target_num_active_clusters = 1;
   PCSTFast::PruningMethod pruning = PCSTFast::kGWPruning;
+  int verbosity_level = 2;*/
+
+  int n = 5;
+  vector<pair<int, int> > edges;
+  edges.push_back(make_pair(0, 1));
+  edges.push_back(make_pair(0, 2));
+  edges.push_back(make_pair(2, 3));
+  edges.push_back(make_pair(3, 4));
+  vector<double> prizes;
+  prizes.push_back(0.0);
+  prizes.push_back(2.2);
+  prizes.push_back(0.0);
+  prizes.push_back(0.0);
+  prizes.push_back(2.1);
+  vector<double> costs;
+  costs.push_back(1.0);
+  costs.push_back(1.0);
+  costs.push_back(1.0);
+  costs.push_back(1.0);
+  int root = -1;
+  int target_num_active_clusters = 1;
+  PCSTFast::PruningMethod pruning = PCSTFast::kStrongPruning;
   int verbosity_level = 2;
 
   PCSTFast algo(n, edges, prizes, costs, root, target_num_active_clusters,
                 pruning, verbosity_level, output_function);
   
-  vector<int> result;
-  algo.run(&result);
+  vector<int> node_result;
+  vector<int> edge_result;
+  algo.run(&node_result, &edge_result);
 
   cout << "Result: " << endl;
-  for (size_t ii = 0; ii < result.size(); ++ii) {
-    cout << result[ii] << " ";
+  cout << "Nodes: " << endl;
+  for (size_t ii = 0; ii < node_result.size(); ++ii) {
+    cout << node_result[ii] << " ";
+  }
+  cout << endl;
+  cout << "Edges: " << endl;
+  for (size_t ii = 0; ii < edge_result.size(); ++ii) {
+    cout << edge_result[ii] << " ";
   }
   cout << endl;
 

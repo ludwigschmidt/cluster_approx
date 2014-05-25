@@ -16,6 +16,7 @@ class PCSTFast {
     kNoPruning = 0,
     kSimplePruning,
     kGWPruning,
+    kStrongPruning,
     kUnknownPruning,
   };
 
@@ -35,7 +36,8 @@ class PCSTFast {
   
   ~PCSTFast();
 
-  bool run(std::vector<int>* result);
+  bool run(std::vector<int>* result_nodes,
+           std::vector<int>* result_edges);
  
  private:
   typedef PairingHeap<double, int> PairingHeapType;
@@ -105,11 +107,22 @@ class PCSTFast {
   double current_time;
   double eps;
   std::vector<bool> node_deleted;
+  std::vector<int> phase2_result;
 
   std::vector<std::pair<int, double> > path_compression_visited;
   std::vector<int> cluster_queue;
-  std::vector<std::vector<int> > phase3_neighbors;
-  
+  std::vector<std::vector<std::pair<int, double> > > phase3_neighbors;
+
+  // for strong pruning
+  std::vector<int> final_component_label;
+  std::vector<std::vector<int> > final_components;
+  int root_component_index;
+  std::vector<std::pair<int, double> > strong_pruning_parent;
+  std::vector<double> strong_pruning_payoff;
+  std::vector<std::pair<bool, int> > stack;
+  std::vector<int> stack2;
+ 
+
   const static int kOutputBufferSize = 10000;
   char output_buffer[kOutputBufferSize];
   
@@ -133,6 +146,18 @@ class PCSTFast {
   void mark_clusters_as_necessary(int start_cluster_index);
 
   void mark_nodes_as_deleted(int start_node_index, int parent_node_index);
+
+  void label_final_component(int start_node_index, int new_component_index);
+
+  void strong_pruning_from(int start_node_index, bool mark_as_deleted);
+
+  int find_best_component_root(int component_index);
+
+  void build_node_set(const std::vector<int>& edge_set,
+                      std::vector<int>* node_set);
+
+  void build_phase3_node_set(std::vector<int>* node_set);
+
 
   int get_other_edge_part_index(int edge_part_index) {
     if (edge_part_index % 2 == 0) {
