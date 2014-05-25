@@ -20,6 +20,10 @@ clean:
 	rm -rf $(OBJDIR)
 	rm -rf $(DEPDIR)
 	rm -f cluster_grid_pcst.mex*
+	rm -f pcst_fast_wrap.cxx
+	rm -f _pcst_fast.so
+	rm -f pcst_fast.py
+	rm -f pcst_fast.pyc
 
 
 mexfiles: cluster_grid_pcst_mexfile
@@ -28,10 +32,23 @@ mexfiles: cluster_grid_pcst_mexfile
 CLUSTER_GRID_OBJS = cluster_grid.o pcst_fast.o
 
 CLUSTER_GRID_MEXFILE_SRC = cluster_grid_pcst_mex_wrapper.cc cluster_grid.cc pcst_fast.cc
-CLUSTER_GRID_MEXFILE_SRC_DEPS = $(CLUSTER_GRID_MEXFILE_SRC) mex_helper.h cluster_grid.h
+CLUSTER_GRID_MEXFILE_SRC_DEPS = $(CLUSTER_GRID_MEXFILE_SRC) mex_helper.h cluster_grid.h pcst_fast.h
 
 cluster_grid_pcst_mexfile: $(CLUSTER_GRID_MEXFILE_SRC_DEPS:%=$(SRCDIR)/%)
 	$(MEX) -v CXXFLAGS="\$$CXXFLAGS $(MEXCXXFLAGS)" -output cluster_grid_pcst $(CLUSTER_GRID_MEXFILE_SRC:%=$(SRCDIR)/%)
+
+
+PCST_FAST_SWIG_SRC = pcst_fast.cc
+PCST_FAST_SWIG_SRC_DEPS = $(PCST_FAST_SWIG_SRC) pcst_fast_swig.h pcst_fast.h pcst_fast.i
+
+pcst_fast_swig: $(PCST_FAST_SWIG_SRC_DEPS:%=$(SRCDIR)/%)
+	swig -c++ -python -builtin -outcurrentdir $(SRCDIR)/pcst_fast.i
+	mkdir -p $(OBJDIR)
+	$(CXX) $(CXXFLAGS) -c $(SRCDIR)/pcst_fast.cc -o $(OBJDIR)/pcst_fast.o
+	$(CXX) $(CXXFLAGS) `python-config --includes` -c pcst_fast_wrap.cxx -I $(SRCDIR) -o $(OBJDIR)/pcst_fast_wrap.o
+	$(CXX) -shared $(OBJDIR)/pcst_fast.o $(OBJDIR)/pcst_fast_wrap.o -o _pcst_fast.so `python-config --ldflags` 
+	rm -f pcst_fast_wrap.cxx
+
 
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.cc

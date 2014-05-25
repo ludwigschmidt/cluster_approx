@@ -6,3 +6,7 @@
 *.mexmaci64
 .deps
 obj
+_pcst_fast.so
+pcst_fast.py*
+src/main_pcst
+src/main_cluster_grid
