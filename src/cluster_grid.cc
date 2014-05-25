@@ -86,7 +86,7 @@ void convert_forest_to_support(const vector<int>& forest_node_indices,
     if (node != root) {
       int node_xx = node % width;
       int node_yy = node / width;
-      (*result)[node_xx][node_yy] = true;
+      (*result)[node_yy][node_xx] = true;
     }
   }
 }

@@ -15,7 +15,7 @@ void output_function(const char* output) {
 
 
 int main() {
-  vector<vector<double> > values;
+  /*vector<vector<double> > values;
   values.resize(5);
   values[0].push_back(1.0);
   values[0].push_back(1.0);
@@ -51,15 +51,31 @@ int main() {
   double lambda = 0.1;
   bool include_root = false;
   double gamma = -1.0;
+  PCSTFast::PruningMethod pruning = PCSTFast::kStrongPruning;
+  int verbosity_level = 2;*/
+
+
+  vector<vector<double> > values;
+  values.resize(1);
+  values[0].push_back(2.1);
+  values[0].push_back(0.0);
+  values[0].push_back(0.0);
+  values[0].push_back(0.0);
+  values[0].push_back(2.2);
+
+  int target_num_clusters = 1;
+  double lambda = 1.0;
+  bool include_root = false;
+  double gamma = -1.0;
+  PCSTFast::PruningMethod pruning = PCSTFast::kStrongPruning;
   int verbosity_level = 2;
 
   vector<vector<bool> > result;
   int result_sparsity;
 
   bool res = cluster_grid_pcst(values, target_num_clusters, lambda,
-                               include_root, gamma, PCSTFast::kStrongPruning,
-                               verbosity_level, output_function, &result,
-                               &result_sparsity);
+                               include_root, gamma, pruning, verbosity_level,
+                               output_function, &result, &result_sparsity);
   
   if (!res) {
     printf("Error returned by cluster_grid_pcst\n");
