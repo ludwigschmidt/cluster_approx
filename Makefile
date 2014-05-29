@@ -20,6 +20,7 @@ clean:
 	rm -rf $(OBJDIR)
 	rm -rf $(DEPDIR)
 	rm -f cluster_grid_pcst.mex*
+	rm -f cluster_grid_pcst_binsearch.mex*
 	rm -f pcst_fast_wrap.cxx
 	rm -f _pcst_fast.so
 	rm -f pcst_fast.py

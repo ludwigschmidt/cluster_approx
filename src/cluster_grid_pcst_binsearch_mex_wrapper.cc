@@ -62,8 +62,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   int verbosity_level = 0;
   PCSTFast::PruningMethod pruning = PCSTFast::kGWPruning;
 
-  if (nrhs == 4) {
-    const mxArray* opts = prhs[3];
+  if (nrhs == 5) {
+    const mxArray* opts = prhs[4];
 
     // set of accepted options
     set<string> known_options;
