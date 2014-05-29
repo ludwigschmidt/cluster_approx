@@ -242,6 +242,254 @@ TEST(PCSTFastTest, Simple3TestRootedGWPruning) {
 }
 
 
+TEST(PCSTFastTest, Simple4TestRootedNoPruning) {
+  int n = 3;
+  vector<pair<int, int> > edges;
+  edges.push_back(make_pair(0, 1));
+  edges.push_back(make_pair(1, 2));
+  const double prizes[] = {10, 3, 3};
+  const double costs[] = {100, 2};
+  int root = 0;
+  int target_num_active_clusters = 0;
+  PCSTFast::PruningMethod pruning = PCSTFast::kNoPruning;
+
+  const int node_result[] = {0, 1, 2};
+  const int edge_result[] = {1};
+
+  RunAlgo(n, edges, prizes, costs, root, target_num_active_clusters, pruning,
+          node_result, edge_result);
+}
+
+
+TEST(PCSTFastTest, Simple4TestRootedGWPruning) {
+  int n = 3;
+  vector<pair<int, int> > edges;
+  edges.push_back(make_pair(0, 1));
+  edges.push_back(make_pair(1, 2));
+  const double prizes[] = {10, 3, 3};
+  const double costs[] = {100, 2};
+  int root = 0;
+  int target_num_active_clusters = 0;
+  PCSTFast::PruningMethod pruning = PCSTFast::kGWPruning;
+
+  const int node_result[] = {0};
+  // no edges expected
+
+  RunAlgo(n, edges, prizes, costs, root, target_num_active_clusters, pruning,
+          node_result);
+}
+
+
+TEST(PCSTFastTest, Simple4TestUnRootedGWPruning) {
+  int n = 3;
+  vector<pair<int, int> > edges;
+  edges.push_back(make_pair(0, 1));
+  edges.push_back(make_pair(1, 2));
+  const double prizes[] = {10, 3, 3};
+  const double costs[] = {100, 2};
+  int root = -1;
+  int target_num_active_clusters = 2;
+  PCSTFast::PruningMethod pruning = PCSTFast::kGWPruning;
+
+  const int node_result[] = {0, 1, 2};
+  const int edge_result[] = {1};
+
+  RunAlgo(n, edges, prizes, costs, root, target_num_active_clusters, pruning,
+          node_result, edge_result);
+}
+
+
+TEST(PCSTFastTest, Simple4bTestUnRootedGWPruning) {
+  int n = 3;
+  vector<pair<int, int> > edges;
+  edges.push_back(make_pair(0, 1));
+  edges.push_back(make_pair(1, 2));
+  const double prizes[] = {10, 3, 3};
+  const double costs[] = {100, 2};
+  int root = -1;
+  int target_num_active_clusters = 1;
+  PCSTFast::PruningMethod pruning = PCSTFast::kGWPruning;
+
+  const int node_result[] = {0};
+  // no edges expected
+
+  RunAlgo(n, edges, prizes, costs, root, target_num_active_clusters, pruning,
+          node_result);
+}
+
+
+TEST(PCSTFastTest, Simple5TestUnRootedGWPruning) {
+  int n = 4;
+  vector<pair<int, int> > edges;
+  edges.push_back(make_pair(0, 1));
+  edges.push_back(make_pair(1, 2));
+  edges.push_back(make_pair(2, 3));
+  const double prizes[] = {10, 0, 6, 6};
+  const double costs[] = {100, 2, 5};
+  int root = -1;
+  int target_num_active_clusters = 2;
+  PCSTFast::PruningMethod pruning = PCSTFast::kGWPruning;
+
+  const int node_result[] = {0, 2, 3};
+  const int edge_result[] = {2};
+
+  RunAlgo(n, edges, prizes, costs, root, target_num_active_clusters, pruning,
+          node_result, edge_result);
+}
+
+
+TEST(PCSTFastTest, Medium1TestRootedGWPruning) {
+  int n = 10;
+  vector<pair<int, int> > edges;
+  edges.push_back(make_pair(0, 1));
+  edges.push_back(make_pair(1, 2));
+  edges.push_back(make_pair(2, 3));
+  edges.push_back(make_pair(0, 9));
+  edges.push_back(make_pair(0, 2));
+  edges.push_back(make_pair(0, 3));
+  edges.push_back(make_pair(0, 5));
+  edges.push_back(make_pair(1, 9));
+  edges.push_back(make_pair(1, 3));
+  edges.push_back(make_pair(1, 5));
+  edges.push_back(make_pair(1, 7));
+  edges.push_back(make_pair(2, 8));
+  edges.push_back(make_pair(2, 3));
+  edges.push_back(make_pair(3, 4));
+  edges.push_back(make_pair(3, 5));
+  edges.push_back(make_pair(3, 6));
+  edges.push_back(make_pair(3, 7));
+  edges.push_back(make_pair(3, 8));
+  edges.push_back(make_pair(3, 9));
+  edges.push_back(make_pair(4, 5));
+  edges.push_back(make_pair(4, 6));
+  edges.push_back(make_pair(4, 7));
+  edges.push_back(make_pair(5, 8));
+  edges.push_back(make_pair(6, 8));
+  const double prizes[] = {0.032052554364677466,
+                           0.32473378289799926,
+                           0.069699345546302638,
+                           0,
+                           0.74867253235151754,
+                           0.19804330340026255,
+                           0.85430521133171622,
+                           0.83819939651391351,
+                           0.71744625276884877,
+                           0.016798567754083948};
+  const double costs[] = {0.8,
+                          0.8,
+                          0.8800000000000001,
+                          0.8,
+                          0.8,
+                          0.8800000000000001,
+                          0.8,
+                          0.8,
+                          0.8800000000000001,
+                          0.8,
+                          0.8,
+                          0.8,
+                          0.8800000000000001,
+                          0.8800000000000001,
+                          0.8800000000000001,
+                          0.8800000000000001,
+                          0.8800000000000001,
+                          0.8800000000000001,
+                          0.8800000000000001,
+                          0.8,
+                          0.8,
+                          0.8,
+                          0.8,
+                          0.8};
+  int root = 3;
+  int target_num_active_clusters = 0;
+  PCSTFast::PruningMethod pruning = PCSTFast::kGWPruning;
+
+  const int node_result[] = {3, 4, 6, 7, 8};
+  const int edge_result[] = {16, 20, 21, 23};
+
+  RunAlgo(n, edges, prizes, costs, root, target_num_active_clusters, pruning,
+          node_result, edge_result);
+}
+
+
+TEST(PCSTFastTest, Simple6TestUnRootedGWPruning) {
+  int n = 8;
+  vector<pair<int, int> > edges;
+  edges.push_back(make_pair(0, 1));
+  edges.push_back(make_pair(1, 2));
+  edges.push_back(make_pair(2, 3));
+  edges.push_back(make_pair(3, 4));
+  edges.push_back(make_pair(4, 5));
+  edges.push_back(make_pair(5, 6));
+  edges.push_back(make_pair(6, 7));
+  const double prizes[] = {100.0,
+                           0.0,
+                           0.0,
+                           1.0,
+                           0.0,
+                           0.0,
+                           0.0,
+                           100.0};
+  const double costs[] = {0.9,
+                          0.9,
+                          0.9,
+                          0.9,
+                          0.9,
+                          0.9,
+                          0.9};
+  int root = -1;
+  int target_num_active_clusters = 1;
+  PCSTFast::PruningMethod pruning = PCSTFast::kGWPruning;
+
+  const int node_result[] = {0, 1, 2, 3, 4, 5, 6, 7};
+  const int edge_result[] = {0, 1, 2, 3, 4, 5, 6};
+
+  RunAlgo(n, edges, prizes, costs, root, target_num_active_clusters, pruning,
+          node_result, edge_result);
+}
+
+
+TEST(PCSTFastTest, Simple7TestUnrootedStrongPruning) {
+  int n = 5;
+  vector<pair<int, int> > edges;
+  edges.push_back(make_pair(0, 1));
+  edges.push_back(make_pair(0, 2));
+  edges.push_back(make_pair(2, 3));
+  edges.push_back(make_pair(3, 4));
+  const double prizes[] = {0, 2.2, 0, 0, 2.1};
+  const double costs[] = {1, 1, 1, 1};
+  int root = -1;
+  int target_num_active_clusters = 1;
+  PCSTFast::PruningMethod pruning = PCSTFast::kStrongPruning;
+
+  const int node_result[] = {1};
+  // no edges expected
+
+  RunAlgo(n, edges, prizes, costs, root, target_num_active_clusters, pruning,
+          node_result);
+}
+
+
+TEST(PCSTFastTest, Simple7TestUnrootedGWPruning) {
+  int n = 5;
+  vector<pair<int, int> > edges;
+  edges.push_back(make_pair(0, 1));
+  edges.push_back(make_pair(0, 2));
+  edges.push_back(make_pair(2, 3));
+  edges.push_back(make_pair(3, 4));
+  const double prizes[] = {0, 2.2, 0, 0, 2.1};
+  const double costs[] = {1, 1, 1, 1};
+  int root = -1;
+  int target_num_active_clusters = 1;
+  PCSTFast::PruningMethod pruning = PCSTFast::kGWPruning;
+
+  const int node_result[] = {0, 1, 2, 3, 4};
+  const int edge_result[] = {0, 1, 2, 3};
+
+  RunAlgo(n, edges, prizes, costs, root, target_num_active_clusters, pruning,
+          node_result, edge_result);
+}
+
+
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

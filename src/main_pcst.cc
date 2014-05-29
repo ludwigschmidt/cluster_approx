@@ -75,6 +75,7 @@ int main() {
   PCSTFast::PruningMethod pruning = PCSTFast::kNoPruning;
   int verbosity_level = 2;*/
 
+  // Now included in tests
   /*int n = 3;
   vector<pair<int, int> > edges;
   edges.push_back(make_pair(0, 1));
@@ -91,6 +92,7 @@ int main() {
   PCSTFast::PruningMethod pruning = PCSTFast::kNoPruning;
   int verbosity_level = 2;*/
 
+  // Now included in tests
   /*int n = 3;
   vector<pair<int, int> > edges;
   edges.push_back(make_pair(0, 1));
@@ -107,6 +109,7 @@ int main() {
   PCSTFast::PruningMethod pruning = PCSTFast::kGWPruning;
   int verbosity_level = 2;*/
 
+  // Now included in tests
   /*int n = 3;
   vector<pair<int, int> > edges;
   edges.push_back(make_pair(0, 1));
@@ -123,6 +126,7 @@ int main() {
   PCSTFast::PruningMethod pruning = PCSTFast::kGWPruning;
   int verbosity_level = 2;*/
 
+  // Now included in tests
   /*int n = 4;
   vector<pair<int, int> > edges;
   edges.push_back(make_pair(0, 1));
@@ -142,6 +146,7 @@ int main() {
   PCSTFast::PruningMethod pruning = PCSTFast::kGWPruning;
   int verbosity_level = 2;*/
 
+  // Now included in tests
   /*int n = 10;
   vector<pair<int, int> > edges;
   edges.push_back(make_pair(0, 1));
@@ -209,6 +214,7 @@ int main() {
   PCSTFast::PruningMethod pruning = PCSTFast::kGWPruning;
   int verbosity_level = 2;*/
 
+  // Now included in tests
   /*int n = 8;
   vector<pair<int, int> > edges;
   edges.push_back(make_pair(0, 1));
@@ -240,6 +246,7 @@ int main() {
   PCSTFast::PruningMethod pruning = PCSTFast::kGWPruning;
   int verbosity_level = 2;*/
 
+  // Now included in tests
   int n = 5;
   vector<pair<int, int> > edges;
   edges.push_back(make_pair(0, 1));
