@@ -52,7 +52,6 @@ PCSTFast::PCSTFast(int n_,
     edge_info.resize(edges_.size());
     for (size_t ii = 0; ii < edge_info.size(); ++ii) {
       edge_info[ii].inactive_merge_event = -1;
-      edge_info[ii].good = false;
     }
 
     current_time = 0.0;
@@ -229,7 +228,7 @@ void PCSTFast::get_sum_on_edge_part(int edge_part_index,
   }
 }
 
-void PCSTFast::mark_edges_as_good(int start_cluster_index) {
+void PCSTFast::mark_nodes_as_good(int start_cluster_index) {
   cluster_queue.resize(0);
   int queue_index = 0;
   cluster_queue.push_back(start_cluster_index);
@@ -237,9 +236,10 @@ void PCSTFast::mark_edges_as_good(int start_cluster_index) {
     int cur_cluster_index = cluster_queue[queue_index];
     queue_index += 1;
     if (clusters[cur_cluster_index].merged_along >= 0) {
-      edge_info[clusters[cur_cluster_index].merged_along].good = true;
       cluster_queue.push_back(clusters[cur_cluster_index].child_cluster_1);
       cluster_queue.push_back(clusters[cur_cluster_index].child_cluster_2);
+    } else {
+      node_good[cur_cluster_index] = true;
     }
   }
 }
@@ -620,30 +620,33 @@ bool PCSTFast::run(std::vector<int>* result_nodes,
   }
   //////////////////////////////////////////
 
+  node_good.resize(n, false);
+
   if (root >= 0) {
     // find the root cluster
     for (size_t ii = 0; ii < clusters.size(); ++ii) {
       if (clusters[ii].contains_root && clusters[ii].merged_into == -1) {
-        mark_edges_as_good(ii);
+        mark_nodes_as_good(ii);
         break;
       }
     }
   } else {
     for (size_t ii = 0; ii < clusters.size(); ++ii) {
       if (clusters[ii].active) {
-        mark_edges_as_good(ii);
+        mark_nodes_as_good(ii);
       }
     }
   }
 
   for (size_t ii = 0; ii < phase1_result.size(); ++ii) {
-    if (edge_info[phase1_result[ii]].good) {
+    if (node_good[edges[phase1_result[ii]].first]
+        && node_good[edges[phase1_result[ii]].second]) {
       phase2_result.push_back(phase1_result[ii]);
     }
   }
 
   if (pruning == kSimplePruning) {
-    build_node_set(phase2_result, result_nodes);
+    build_phase2_node_set(result_nodes);
     *result_edges = phase2_result;
     return true;
   }
@@ -979,23 +982,20 @@ int PCSTFast::find_best_component_root(int component_index) {
 
 
 void PCSTFast::build_phase3_node_set(std::vector<int>* node_set) {
-  vector<int> included(n, false);
   node_set->clear();
-  for (size_t ii = 0; ii < phase2_result.size(); ++ii) {
-    int uu = edges[phase2_result[ii]].first;
-    int vv = edges[phase2_result[ii]].second;
-    if (!node_deleted[uu] && !included[uu]) {
-      included[uu] = true;
-      node_set->push_back(uu);
-    }
-    if (!node_deleted[vv] && !included[vv]) {
-      included[vv] = true;
-      node_set->push_back(vv);
+  for (int ii = 0; ii < n; ++ii) {
+    if (!node_deleted[ii] && node_good[ii]) {
+      node_set->push_back(ii);
     }
   }
-  if (root >= 0) {
-    if (!included[root]) {
-      node_set->push_back(root);
+}
+
+
+void PCSTFast::build_phase2_node_set(std::vector<int>* node_set) {
+  node_set->clear();
+  for (int ii = 0; ii < n; ++ii) {
+    if (node_good[ii]) {
+      node_set->push_back(ii);
     }
   }
 }

@@ -15,7 +15,7 @@ void output_function(const char* output) {
 
 
 int main() {
-  /*vector<vector<double> > values;
+  vector<vector<double> > values;
   values.resize(5);
   values[0].push_back(1.0);
   values[0].push_back(1.0);
@@ -47,15 +47,15 @@ int main() {
   values[4].push_back(1.0);
   values[4].push_back(1.0);
 
-  int target_num_clusters = 0;
-  double lambda = 0.1;
-  bool include_root = true;
+  int target_num_clusters = 2;
+  double lambda = 0.5;
+  bool include_root = false;
   double gamma = 1.0;
   PCSTFast::PruningMethod pruning = PCSTFast::kGWPruning;
-  int verbosity_level = 0;*/
+  int verbosity_level = 2;
 
 
-  vector<vector<double> > values;
+  /*vector<vector<double> > values;
   values.resize(1);
   values[0].push_back(2.1);
   values[0].push_back(0.0);
@@ -66,9 +66,9 @@ int main() {
   int target_num_clusters = 0;
   double lambda = 1.5;
   bool include_root = true;
-  double gamma = 1.0;
+  double gamma = 0.1;
   PCSTFast::PruningMethod pruning = PCSTFast::kGWPruning;
-  int verbosity_level = 2;
+  int verbosity_level = 2;*/
 
   vector<vector<bool> > result;
   int result_sparsity;

@@ -45,7 +45,6 @@ class PCSTFast {
 
   struct EdgeInfo {
     int inactive_merge_event;
-    bool good;                // marks whether the edge survives simple pruning
   };
 
   struct EdgePart {
@@ -106,6 +105,7 @@ class PCSTFast {
   PriorityQueueType clusters_next_edge_event;
   double current_time;
   double eps;
+  std::vector<bool> node_good;  // marks whether a node survives simple pruning
   std::vector<bool> node_deleted;
   std::vector<int> phase2_result;
 
@@ -141,7 +141,7 @@ class PCSTFast {
                             double* finished_moat_sum,
                             int* cur_cluser_index);
 
-  void mark_edges_as_good(int start_cluster_index);
+  void mark_nodes_as_good(int start_cluster_index);
 
   void mark_clusters_as_necessary(int start_cluster_index);
 
@@ -157,6 +157,8 @@ class PCSTFast {
                       std::vector<int>* node_set);
 
   void build_phase3_node_set(std::vector<int>* node_set);
+
+  void build_phase2_node_set(std::vector<int>* node_set);
 
 
   int get_other_edge_part_index(int edge_part_index) {
