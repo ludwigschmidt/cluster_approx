@@ -287,6 +287,15 @@ bool PCSTFast::run(std::vector<int>* result_nodes,
   result_nodes->clear();
   result_edges->clear();
 
+  //////////////////////////////////////////
+  if (root >= 0 && target_num_active_clusters > 0) {
+    snprintf(output_buffer, kOutputBufferSize,
+        "Error: target_num_active_clusters must be 0 in the rooted case.\n");
+    output_function(output_buffer);
+    return false;
+  }
+  //////////////////////////////////////////
+
   vector<int> phase1_result;
   int num_active_clusters = n;
   if (root >= 0) {
@@ -604,22 +613,8 @@ bool PCSTFast::run(std::vector<int>* result_nodes,
     }
   }
 
-  if (pruning == kNoPruning) {
-    build_node_set(phase1_result, result_nodes);
-    *result_edges = phase1_result;
-    return true;
-  }
 
-  //////////////////////////////////////////
-  if (verbosity_level >= 2) {
-    snprintf(output_buffer, kOutputBufferSize,
-        "------------------------------------------\n");
-    output_function(output_buffer);
-    snprintf(output_buffer, kOutputBufferSize, "Starting pruning\n");
-    output_function(output_buffer);
-  }
-  //////////////////////////////////////////
-
+  // Mark root cluster or active clusters as good.
   node_good.resize(n, false);
 
   if (root >= 0) {
@@ -637,6 +632,22 @@ bool PCSTFast::run(std::vector<int>* result_nodes,
       }
     }
   }
+
+  if (pruning == kNoPruning) {
+    build_phase1_node_set(phase1_result, result_nodes);
+    *result_edges = phase1_result;
+    return true;
+  }
+
+  //////////////////////////////////////////
+  if (verbosity_level >= 2) {
+    snprintf(output_buffer, kOutputBufferSize,
+        "------------------------------------------\n");
+    output_function(output_buffer);
+    snprintf(output_buffer, kOutputBufferSize, "Starting pruning\n");
+    output_function(output_buffer);
+  }
+  //////////////////////////////////////////
 
   for (size_t ii = 0; ii < phase1_result.size(); ++ii) {
     if (node_good[edges[phase1_result[ii]].first]
@@ -1001,8 +1012,8 @@ void PCSTFast::build_phase2_node_set(std::vector<int>* node_set) {
 }
 
 
-void PCSTFast::build_node_set(const std::vector<int>& edge_set,
-                              std::vector<int>* node_set) {
+void PCSTFast::build_phase1_node_set(const std::vector<int>& edge_set,
+                                     std::vector<int>* node_set) {
   vector<int> included(n, false);
   node_set->clear();
   for (size_t ii = 0; ii < edge_set.size(); ++ii) {
@@ -1017,9 +1028,9 @@ void PCSTFast::build_node_set(const std::vector<int>& edge_set,
       node_set->push_back(vv);
     }
   }
-  if (root >= 0) {
-    if (!included[root]) {
-      node_set->push_back(root);
+  for (int ii = 0; ii < n; ++ii) {
+    if (node_good[ii] && !included[ii]) {
+      node_set->push_back(ii);
     }
   }
 }

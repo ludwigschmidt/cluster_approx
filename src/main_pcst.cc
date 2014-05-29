@@ -18,6 +18,7 @@ void output_function(const char* s) {
 }
 
 int main() {
+  // Now included in tests
   /*int n = 3;
   vector<pair<int, int> > edges;
   edges.push_back(make_pair(0, 1));
@@ -34,6 +35,7 @@ int main() {
   PCSTFast::PruningMethod pruning = PCSTFast::kNoPruning;
   int verbosity_level = 2;*/
 
+  // Now included in tests
   /*int n = 4;
   vector<pair<int, int> > edges;
   edges.push_back(make_pair(0, 1));
@@ -53,6 +55,7 @@ int main() {
   PCSTFast::PruningMethod pruning = PCSTFast::kNoPruning;
   int verbosity_level = 2;*/
 
+  // Now included in tests
   /*int n = 4;
   vector<pair<int, int> > edges;
   edges.push_back(make_pair(0, 1));

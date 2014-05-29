@@ -153,8 +153,8 @@ class PCSTFast {
 
   int find_best_component_root(int component_index);
 
-  void build_node_set(const std::vector<int>& edge_set,
-                      std::vector<int>* node_set);
+  void build_phase1_node_set(const std::vector<int>& edge_set,
+                             std::vector<int>* node_set);
 
   void build_phase3_node_set(std::vector<int>* node_set);
 

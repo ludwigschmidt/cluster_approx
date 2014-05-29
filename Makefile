@@ -12,7 +12,7 @@ SRCDIR = src
 DEPDIR = .deps
 OBJDIR = obj
 
-SRCS = cluster_grid.cc pcst_fast.cc cluster_grid_pcst_mex_wrapper.cc
+SRCS = cluster_grid.cc pcst_fast.cc cluster_grid_pcst_mex_wrapper.cc pcst_fast_test.cc
 
 .PHONY: clean archive
 
@@ -25,9 +25,25 @@ clean:
 	rm -f _pcst_fast.so
 	rm -f pcst_fast.py
 	rm -f pcst_fast.pyc
+	rm -f pcst_fast_test
 
+run_tests: run_pcst_fast_test
 
 mexfiles: cluster_grid_pcst_mexfile cluster_grid_pcst_binsearch_mexfile
+
+# gtest
+$(OBJDIR)/gtest-all.o: $(GTESTDIR)/src/gtest-all.cc
+	$(CXX) $(CXXFLAGS) -I $(GTESTDIR) -c -o $@ $<
+
+
+PCST_FAST_OBJS = pcst_fast.o
+
+PCST_FAST_TEST_OBJS = $(PCST_FAST_OBJS) pcst_fast_test.o gtest-all.o
+pcst_fast_test: $(PCST_FAST_TEST_OBJS:%=$(OBJDIR)/%)
+	$(CXX) $(CXXFLAGS) -o $@ $^ -pthread
+
+run_pcst_fast_test: pcst_fast_test
+	./pcst_fast_test
 
 
 CLUSTER_GRID_OBJS = cluster_grid.o pcst_fast.o
