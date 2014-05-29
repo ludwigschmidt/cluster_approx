@@ -8,6 +8,7 @@
 #include "pcst_fast.h"
 
 using std::make_pair;
+using std::max;
 using std::vector;
 
 namespace cluster_approx {
@@ -177,27 +178,43 @@ bool cluster_grid_pcst_binsearch(const Matrix2d& values,
   std::nth_element(sorted_prizes.begin(),
                    sorted_prizes.begin() + guess_pos,
                    sorted_prizes.end());
-  double lambda_high = sorted_prizes[guess_pos];
+  double lambda_high = 2.0 * sorted_prizes[guess_pos];
 
   bool using_sparsity_low = false;
+  bool using_max_value = false;
   if (lambda_high == 0.0) {
     guess_pos = sorted_prizes.size() - sparsity_low;
     std::nth_element(sorted_prizes.begin(),
                      sorted_prizes.begin() + guess_pos,
                      sorted_prizes.end());
-    lambda_high = sorted_prizes[guess_pos]; 
-    using_sparsity_low = true;
+    lambda_high = 2.0 * sorted_prizes[guess_pos]; 
+    if (lambda_high != 0.0) {
+      using_sparsity_low = true;
+    } else {
+      using_max_value = true;
+      lambda_high = prizes[0];
+      for (size_t ii = 1; ii < prizes.size(); ++ii) {
+        lambda_high = max(lambda_high, prizes[ii]);
+      }
+      lambda_high *= 2.0;
+    }
   }
 
   if (verbosity_level >= 1) {
     const char* sparsity_low_text = "k_low";
     const char* sparsity_high_text = "k_high";
+    const char* max_value_text = "max value";
+    const char* guess_text = sparsity_high_text;
+    if (using_sparsity_low) {
+      guess_text = sparsity_low_text;
+    } else if (using_max_value) {
+      guess_text = max_value_text;
+    }
     snprintf(output_buffer, kOutputBufferSize, "n = %d  c: %d  k_low: %d  "
         "k_high: %d  l_low: %e  l_high: %e  max_num_iter: %d  (using %s for "
         "initial guess).\n",
         n, target_num_clusters, sparsity_low, sparsity_high, lambda_low,
-        lambda_high, max_num_iter,
-        (using_sparsity_low ? sparsity_low_text : sparsity_high_text));
+        lambda_high, max_num_iter, guess_text);
     output_function(output_buffer);
   }
   
