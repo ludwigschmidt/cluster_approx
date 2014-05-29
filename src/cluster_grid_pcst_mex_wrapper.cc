@@ -32,7 +32,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     mexErrMsgTxt("Too many input arguments, at most four: values, num_clusters,"
         " lambda, and the options struct.");
   }
-  if (nlhs > 2) {
+  if (nlhs > 3) {
     mexErrMsgTxt("Too many output arguments.");
   }
 
@@ -110,10 +110,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   
   vector<vector<bool> > support;
   int result_sparsity;
+  int result_num_clusters;
 
   bool res = cluster_grid_pcst(values, target_num_clusters, lambda,
                                include_root, gamma, pruning, verbosity_level,
-                               output_function, &support, &result_sparsity);
+                               output_function, &support, &result_sparsity,
+                               &result_num_clusters);
   
   if (!res) {
     mexErrMsgTxt("cluster_grid_pcst returned false.");
@@ -125,6 +127,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 
   if (nlhs >= 2) {
     set_double(&(plhs[1]), result_sparsity);
+  }
+
+  if (nlhs >= 3) {
+    set_double(&(plhs[2]), result_num_clusters);
   }
 
   return;

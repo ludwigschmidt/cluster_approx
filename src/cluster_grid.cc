@@ -81,7 +81,8 @@ void convert_forest_to_support(const vector<int>& forest_node_indices,
                                int root,
                                int width,
                                int height,
-                               Matrix2b* result) {
+                               Matrix2b* result,
+                               int* num_clusters) {
   result->clear();
   result->resize(height);
   for (int yy = 0; yy < height; ++yy) {
@@ -96,6 +97,60 @@ void convert_forest_to_support(const vector<int>& forest_node_indices,
       (*result)[node_yy][node_xx] = true;
     }
   }
+
+  if (num_clusters != NULL) {
+    *num_clusters = 0;
+    vector<int> label(width * height, 0);
+    vector<int> q;
+
+    for (size_t ii = 0; ii < forest_node_indices.size(); ++ii) {
+      int node = forest_node_indices[ii];
+      if (node != root && label[node] == 0) {
+        *num_clusters += 1;
+        label[node] = *num_clusters;
+
+        q.resize(0);
+        q.push_back(node);
+        size_t q_pointer = 0;
+        while (q_pointer < q.size()) {
+          int cur_node = q[q_pointer];
+          q_pointer += 1;
+          int xx = cur_node % width;
+          int yy = cur_node / width;
+
+          int next_node = 0;
+          if (xx > 0) {
+            next_node = yy * width + xx - 1;
+            if (label[next_node] == 0 && (*result)[yy][xx]) {
+              label[next_node] = *num_clusters;
+              q.push_back(next_node);
+            }
+          }
+          if (xx < width - 1) {
+            next_node = yy * width + xx + 1;
+            if (label[next_node] == 0 && (*result)[yy][xx]) {
+              label[next_node] = *num_clusters;
+              q.push_back(next_node);
+            }
+          }
+          if (yy > 0) {
+            next_node = (yy - 1) * width + xx;
+            if (label[next_node] == 0 && (*result)[yy][xx]) {
+              label[next_node] = *num_clusters;
+              q.push_back(next_node);
+            }
+          }
+          if (yy < height - 1) {
+            next_node = (yy + 1) * width + xx;
+            if (label[next_node] == 0 && (*result)[yy][xx]) {
+              label[next_node] = *num_clusters;
+              q.push_back(next_node);
+            }
+          }
+        }
+      }
+    }
+  }
 }
 
 
@@ -108,7 +163,8 @@ bool cluster_grid_pcst(const Matrix2d& values,
                        int verbosity_level,
                        void (*output_function)(const char*),
                        Matrix2b* result,
-                       int* result_sparsity) {
+                       int* result_sparsity,
+                       int* result_num_clusters) {
   int n;
   vector<EdgePair> edges;
   vector<double> prizes;
@@ -137,7 +193,7 @@ bool cluster_grid_pcst(const Matrix2d& values,
   }
   
   convert_forest_to_support(forest_node_indices, root, values[0].size(),
-                            values.size(), result);
+                            values.size(), result, result_num_clusters);
   
   *result_sparsity = static_cast<int>(forest_node_indices.size());
   if (include_root) {
@@ -255,7 +311,7 @@ bool cluster_grid_pcst_binsearch(const Matrix2d& values,
   if (num_iter < max_num_iter && cur_k >= sparsity_low) {
     *result_sparsity = cur_k;
     convert_forest_to_support(forest_node_indices, root, values[0].size(),
-                              values.size(), result);
+                              values.size(), result, NULL);
     if (verbosity_level >= 1) {
       snprintf(output_buffer, kOutputBufferSize, "Found good lambda "
           "in exponential increase phase, returning.\n");
@@ -297,7 +353,7 @@ bool cluster_grid_pcst_binsearch(const Matrix2d& values,
     if (cur_k <= sparsity_high && cur_k >= sparsity_low) {
       *result_sparsity = cur_k;
       convert_forest_to_support(forest_node_indices, root, values[0].size(),
-                                values.size(), result);
+                                values.size(), result, NULL);
       if (verbosity_level >= 1) {
         snprintf(output_buffer, kOutputBufferSize, "Found good lambda "
             "in binary search phase, returning.\n");
@@ -329,7 +385,7 @@ bool cluster_grid_pcst_binsearch(const Matrix2d& values,
   }
   *result_sparsity = forest_node_indices.size();
   convert_forest_to_support(forest_node_indices, root, values[0].size(),
-                            values.size(), result);
+                            values.size(), result, NULL);
 
   if (verbosity_level >= 1) {
     snprintf(output_buffer, kOutputBufferSize, "Reached the maximum number of "

@@ -57,7 +57,7 @@ PCSTFast::PCSTFast(int n_,
 
     current_time = 0.0;
     // TODO: set to min input value / 2.0?
-    eps = 1e-6;
+    eps = 1e-12;
 
     for (int ii = 0; ii < n; ++ii) {
       clusters.push_back(Cluster(&pairing_heap_buffer));
@@ -467,10 +467,10 @@ bool PCSTFast::run(std::vector<int>* result_nodes,
           }
           num_active_clusters -= 1;
         } else {
-          double edge_event_update_time = current_time
-                                          - other_cluster.active_end_time;
-          other_cluster.edge_parts.add_to_heap(edge_event_update_time);
           if (!other_cluster.contains_root) {
+            double edge_event_update_time = current_time
+                                            - other_cluster.active_end_time;
+            other_cluster.edge_parts.add_to_heap(edge_event_update_time);
             inactive_merge_events.push_back(InactiveMergeEvent());
             InactiveMergeEvent& merge_event =
                 inactive_merge_events[inactive_merge_events.size() - 1];
@@ -993,6 +993,11 @@ void PCSTFast::build_phase3_node_set(std::vector<int>* node_set) {
       node_set->push_back(vv);
     }
   }
+  if (root >= 0) {
+    if (!included[root]) {
+      node_set->push_back(root);
+    }
+  }
 }
 
 
@@ -1010,6 +1015,11 @@ void PCSTFast::build_node_set(const std::vector<int>& edge_set,
     if (!included[vv]) {
       included[vv] = true;
       node_set->push_back(vv);
+    }
+  }
+  if (root >= 0) {
+    if (!included[root]) {
+      node_set->push_back(root);
     }
   }
 }

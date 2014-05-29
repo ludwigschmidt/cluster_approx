@@ -27,7 +27,8 @@ void convert_forest_to_support(const std::vector<int>& forest_node_indices,
                                int root,
                                int width,
                                int height,
-                               Matrix2b* result);
+                               Matrix2b* result,
+                               int* num_clusters);
 
 
 bool cluster_grid_pcst(const Matrix2d& values,
@@ -39,7 +40,8 @@ bool cluster_grid_pcst(const Matrix2d& values,
                        int verbosity_level,
                        void (*output_function_)(const char*),
                        Matrix2b* result,
-                       int* result_sparsity);
+                       int* result_sparsity,
+                       int* result_num_clusters);
 
 
 bool cluster_grid_pcst_binsearch(const Matrix2d& values,
