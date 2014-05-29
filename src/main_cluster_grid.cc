@@ -15,7 +15,7 @@ void output_function(const char* output) {
 
 
 int main() {
-  /*vector<vector<double> > values;
+  vector<vector<double> > values;
   values.resize(5);
   values[0].push_back(1.0);
   values[0].push_back(1.0);
@@ -52,10 +52,10 @@ int main() {
   bool include_root = false;
   double gamma = -1.0;
   PCSTFast::PruningMethod pruning = PCSTFast::kStrongPruning;
-  int verbosity_level = 2;*/
+  int verbosity_level = 1;
 
 
-  vector<vector<double> > values;
+  /*vector<vector<double> > values;
   values.resize(1);
   values[0].push_back(2.1);
   values[0].push_back(0.0);
@@ -75,7 +75,16 @@ int main() {
 
   bool res = cluster_grid_pcst(values, target_num_clusters, lambda,
                                include_root, gamma, pruning, verbosity_level,
-                               output_function, &result, &result_sparsity);
+                               output_function, &result, &result_sparsity);*/
+
+  int k_low = 6;
+  int k_high = 8;
+  int max_num_iter = 10;
+  vector<vector<bool> > result;
+  int result_sparsity;
+  bool res = cluster_grid_pcst_binsearch(values, target_num_clusters, k_low,
+      k_high, max_num_iter, pruning, verbosity_level, output_function,
+      &result, &result_sparsity);
   
   if (!res) {
     printf("Error returned by cluster_grid_pcst\n");

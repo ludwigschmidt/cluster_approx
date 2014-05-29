@@ -1,5 +1,7 @@
 #include "cluster_grid.h"
 
+#include <algorithm>
+#include <cstdio>
 #include <utility>
 #include <vector>
 
@@ -9,6 +11,10 @@ using std::make_pair;
 using std::vector;
 
 namespace cluster_approx {
+
+const int kOutputBufferSize = 10000;
+char output_buffer[kOutputBufferSize];
+
 
 void build_grid_graph(const Matrix2d& values,
                       bool include_root,
@@ -139,5 +145,184 @@ bool cluster_grid_pcst(const Matrix2d& values,
 
   return true;
 }
+
+
+bool cluster_grid_pcst_binsearch(const Matrix2d& values,
+                                 int target_num_clusters,
+                                 int sparsity_low,
+                                 int sparsity_high,
+                                 int max_num_iter,
+                                 PCSTFast::PruningMethod pruning,
+                                 int verbosity_level,
+                                 void (*output_function)(const char*),
+                                 Matrix2b* result,
+                                 int* result_sparsity) {
+  int n;
+  vector<EdgePair> edges;
+  vector<double> prizes;
+  vector<double> costs;
+  int root;
+  
+  build_grid_graph(values, false, 0.0, &n, &edges, &prizes, &costs, &root);
+
+  if (n == 0) {
+    return false;
+  }
+
+  vector<double> cur_costs(costs);
+
+  double lambda_low = 0.0;
+  vector<double> sorted_prizes(prizes);
+  int guess_pos = sorted_prizes.size() - sparsity_high;
+  std::nth_element(sorted_prizes.begin(),
+                   sorted_prizes.begin() + guess_pos,
+                   sorted_prizes.end());
+  double lambda_high = sorted_prizes[guess_pos];
+
+  bool using_sparsity_low = false;
+  if (lambda_high == 0.0) {
+    guess_pos = sorted_prizes.size() - sparsity_low;
+    std::nth_element(sorted_prizes.begin(),
+                     sorted_prizes.begin() + guess_pos,
+                     sorted_prizes.end());
+    lambda_high = sorted_prizes[guess_pos]; 
+    using_sparsity_low = true;
+  }
+
+  if (verbosity_level >= 1) {
+    const char* sparsity_low_text = "k_low";
+    const char* sparsity_high_text = "k_high";
+    snprintf(output_buffer, kOutputBufferSize, "n = %d  c: %d  k_low: %d  "
+        "k_high: %d  l_low: %e  l_high: %e  max_num_iter: %d  (using %s for "
+        "initial guess).\n",
+        n, target_num_clusters, sparsity_low, sparsity_high, lambda_low,
+        lambda_high, max_num_iter,
+        (using_sparsity_low ? sparsity_low_text : sparsity_high_text));
+    output_function(output_buffer);
+  }
+  
+  int num_iter = 0;
+  int cur_k = sparsity_high + 1;
+  lambda_high /= 2.0;
+  vector<int> forest_node_indices;
+  vector<int> forest_edge_indices;
+
+  do {
+    num_iter += 1;
+    lambda_high *= 2.0;
+
+    // run algo
+    for (size_t ii = 0; ii < costs.size(); ++ii) {
+      cur_costs[ii] = lambda_high * costs[ii];
+    }
+
+    PCSTFast algo(n, edges, prizes, cur_costs, root, target_num_clusters,
+                  pruning, verbosity_level, output_function);
+
+    bool res = algo.run(&forest_node_indices, &forest_edge_indices);
+    if (!res) {
+      snprintf(output_buffer, kOutputBufferSize, "Algorithm returned false.\n");
+      output_function(output_buffer);
+      return false;
+    }
+
+    cur_k = forest_node_indices.size();
+
+    if (verbosity_level >= 1) {
+      snprintf(output_buffer, kOutputBufferSize, "increase:   l_high: %e  "
+          "k: %d\n", lambda_high, cur_k);
+      output_function(output_buffer);
+    }
+  } while (cur_k > sparsity_high && num_iter < max_num_iter);
+
+  if (num_iter < max_num_iter && cur_k >= sparsity_low) {
+    *result_sparsity = cur_k;
+    convert_forest_to_support(forest_node_indices, root, values[0].size(),
+                              values.size(), result);
+    if (verbosity_level >= 1) {
+      snprintf(output_buffer, kOutputBufferSize, "Found good lambda "
+          "in exponential increase phase, returning.\n");
+      output_function(output_buffer);
+    }
+    return true;
+  }
+
+  double lambda_mid = 0.0;
+
+  while (num_iter < max_num_iter) {
+    num_iter += 1;
+    lambda_mid = (lambda_low + lambda_high) / 2.0;
+
+    // run algo
+    for (size_t ii = 0; ii < costs.size(); ++ii) {
+      cur_costs[ii] = lambda_mid * costs[ii];
+    }
+
+    PCSTFast algo(n, edges, prizes, cur_costs, root, target_num_clusters,
+                  pruning, verbosity_level, output_function);
+
+    bool res = algo.run(&forest_node_indices, &forest_edge_indices);
+    if (!res) {
+      snprintf(output_buffer, kOutputBufferSize, "Algorithm returned false.\n");
+      output_function(output_buffer);
+      return false;
+    }
+
+    cur_k = forest_node_indices.size();
+    
+    if (verbosity_level >= 1) {
+      snprintf(output_buffer, kOutputBufferSize, "bin_search: l_mid:  %e  "
+          "k: %d  (lambda_low: %e  lambda_high: %e)\n", lambda_mid, cur_k,
+          lambda_low, lambda_high);
+      output_function(output_buffer);
+    }
+
+    if (cur_k <= sparsity_high && cur_k >= sparsity_low) {
+      *result_sparsity = cur_k;
+      convert_forest_to_support(forest_node_indices, root, values[0].size(),
+                                values.size(), result);
+      if (verbosity_level >= 1) {
+        snprintf(output_buffer, kOutputBufferSize, "Found good lambda "
+            "in binary search phase, returning.\n");
+        output_function(output_buffer);
+      }
+      return true;
+    }
+
+    if (cur_k > sparsity_high) {
+      lambda_low = lambda_mid;
+    } else {
+      lambda_high = lambda_mid;
+    }
+  }
+
+  // run algo
+  for (size_t ii = 0; ii < costs.size(); ++ii) {
+    cur_costs[ii] = lambda_high * costs[ii];
+  }
+
+  PCSTFast algo(n, edges, prizes, cur_costs, root, target_num_clusters,
+                pruning, verbosity_level, output_function);
+
+  bool res = algo.run(&forest_node_indices, &forest_edge_indices);
+  if (!res) {
+    snprintf(output_buffer, kOutputBufferSize, "Algorithm returned false.\n");
+    output_function(output_buffer);
+    return false;
+  }
+  *result_sparsity = forest_node_indices.size();
+  convert_forest_to_support(forest_node_indices, root, values[0].size(),
+                            values.size(), result);
+
+  if (verbosity_level >= 1) {
+    snprintf(output_buffer, kOutputBufferSize, "Reached the maximum number of "
+        "iterations, using the last l_high: %e  k: %d\n",
+        lambda_high, *result_sparsity);
+    output_function(output_buffer);
+  }
+
+  return true;
+}
+
 
 }  // namespace cluster_approx

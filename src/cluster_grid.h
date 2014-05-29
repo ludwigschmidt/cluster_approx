@@ -42,6 +42,18 @@ bool cluster_grid_pcst(const Matrix2d& values,
                        int* result_sparsity);
 
 
+bool cluster_grid_pcst_binsearch(const Matrix2d& values,
+                                 int target_num_clusters,
+                                 int sparsity_low,
+                                 int sparsity_high,
+                                 int max_num_iter,
+                                 PCSTFast::PruningMethod pruning,
+                                 int verbosity_level,
+                                 void (*output_function_)(const char*),
+                                 Matrix2b* result,
+                                 int* result_sparsity);
+
+
 }  // namespace cluster_approx
 
 

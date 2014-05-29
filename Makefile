@@ -26,16 +26,22 @@ clean:
 	rm -f pcst_fast.pyc
 
 
-mexfiles: cluster_grid_pcst_mexfile
+mexfiles: cluster_grid_pcst_mexfile cluster_grid_pcst_binsearch_mexfile
 
 
 CLUSTER_GRID_OBJS = cluster_grid.o pcst_fast.o
 
-CLUSTER_GRID_MEXFILE_SRC = cluster_grid_pcst_mex_wrapper.cc cluster_grid.cc pcst_fast.cc
-CLUSTER_GRID_MEXFILE_SRC_DEPS = $(CLUSTER_GRID_MEXFILE_SRC) mex_helper.h cluster_grid.h pcst_fast.h
+CLUSTER_GRID_PCST_MEXFILE_SRC = cluster_grid_pcst_mex_wrapper.cc cluster_grid.cc pcst_fast.cc
+CLUSTER_GRID_PCST_MEXFILE_SRC_DEPS = $(CLUSTER_GRID_PCST_MEXFILE_SRC) mex_helper.h cluster_grid.h pcst_fast.h
 
-cluster_grid_pcst_mexfile: $(CLUSTER_GRID_MEXFILE_SRC_DEPS:%=$(SRCDIR)/%)
-	$(MEX) -v CXXFLAGS="\$$CXXFLAGS $(MEXCXXFLAGS)" -output cluster_grid_pcst $(CLUSTER_GRID_MEXFILE_SRC:%=$(SRCDIR)/%)
+cluster_grid_pcst_mexfile: $(CLUSTER_GRID_PCST_MEXFILE_SRC_DEPS:%=$(SRCDIR)/%)
+	$(MEX) -v CXXFLAGS="\$$CXXFLAGS $(MEXCXXFLAGS)" -output cluster_grid_pcst $(CLUSTER_GRID_PCST_MEXFILE_SRC:%=$(SRCDIR)/%)
+
+CLUSTER_GRID_PCST_BINSEARCH_MEXFILE_SRC = cluster_grid_pcst_binsearch_mex_wrapper.cc cluster_grid.cc pcst_fast.cc
+CLUSTER_GRID_PCST_BINSEARCH_MEXFILE_SRC_DEPS = $(CLUSTER_GRID_PCST_BINSEARCH_MEXFILE_SRC) mex_helper.h cluster_grid.h pcst_fast.h
+
+cluster_grid_pcst_binsearch_mexfile: $(CLUSTER_GRID_PCST_BINSEARCH_MEXFILE_SRC_DEPS:%=$(SRCDIR)/%)
+	$(MEX) -v CXXFLAGS="\$$CXXFLAGS $(MEXCXXFLAGS)" -output cluster_grid_pcst_binsearch $(CLUSTER_GRID_PCST_BINSEARCH_MEXFILE_SRC:%=$(SRCDIR)/%)
 
 
 PCST_FAST_SWIG_SRC = pcst_fast.cc
