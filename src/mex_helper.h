@@ -8,6 +8,15 @@
 #include <vector>
 #include <string>
 
+// Visual C++ does not know round.
+int my_round(double x) {
+  if (x >= 0.0) {
+    return static_cast<int>(x + 0.5);
+  } else {
+    return static_cast<int>(x - 0.5);
+  }
+}
+
 bool get_double(const mxArray* raw_data, double* data) {
   int numdims = mxGetNumberOfDimensions(raw_data);
   const mwSize* dims = mxGetDimensions(raw_data);
@@ -24,7 +33,7 @@ bool get_double(const mxArray* raw_data, double* data) {
 bool get_double_as_int(const mxArray* raw_data, int* data) {
   double tmp;
   if (get_double(raw_data, &tmp)) {
-    if (tmp != round(tmp)) {
+    if (tmp != my_round(tmp)) {
       return false;
     }
     *data = static_cast<int>(tmp);
@@ -37,7 +46,7 @@ bool get_double_as_int(const mxArray* raw_data, int* data) {
 bool get_double_as_size_t(const mxArray* raw_data, size_t* data) {
   double tmp;
   if (get_double(raw_data, &tmp)) {
-    if (tmp != round(tmp) || tmp < 0.0) {
+    if (tmp != my_round(tmp) || tmp < 0.0) {
       return false;
     }
     *data = static_cast<size_t>(tmp);
@@ -157,7 +166,7 @@ bool get_double_row_vector_as_ints(const mxArray* raw_data,
     data->resize(tmp.size());
   }
   for (size_t ii = 0; ii < tmp.size(); ++ii) {
-    (*data)[ii] = static_cast<int>(round(tmp[ii]));
+    (*data)[ii] = static_cast<int>(my_round(tmp[ii]));
   }
   return true;
 }
@@ -171,8 +180,8 @@ bool get_double_interval_as_ints(const mxArray* raw_data, int* left,
   if (tmp.size() != 2) {
     return false;
   }
-  *left = static_cast<double>(round(tmp[0]) + 0.1);
-  *right= static_cast<double>(round(tmp[1]) + 0.1);
+  *left = static_cast<double>(my_round(tmp[0]) + 0.1);
+  *right= static_cast<double>(my_round(tmp[1]) + 0.1);
   return true;
 }
 
