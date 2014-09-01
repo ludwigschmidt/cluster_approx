@@ -315,7 +315,7 @@ bool PCSTFast::run(std::vector<int>* result_nodes,
 
     double next_edge_time;
     int next_edge_cluster_index;
-    int next_edge_part_index;
+    int next_edge_part_index = -1;
     get_next_edge_event(&next_edge_time,
                         &next_edge_cluster_index,
                         &next_edge_part_index);
