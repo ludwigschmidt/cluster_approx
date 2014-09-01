@@ -65,12 +65,6 @@ PCSTFast::PCSTFast(int n_,
       if (ii == root) {
         clusters[ii].active_end_time = 0.0;
       }
-      clusters[ii].merge_time = -1.0;
-      if (ii != root) {
-        clusters[ii].becoming_inactive_time = prizes[ii];
-      } else {
-        clusters[ii].becoming_inactive_time = 0.0;
-      }
       clusters[ii].merged_into = -1;
       clusters[ii].prize_sum = prizes[ii];
       clusters[ii].subcluster_moat_sum = 0.0;
@@ -85,7 +79,7 @@ PCSTFast::PCSTFast(int n_,
       clusters[ii].necessary = false;
 
       if (clusters[ii].active) {
-        clusters_deactivation.insert(clusters[ii].becoming_inactive_time, ii);
+        clusters_deactivation.insert(prizes[ii], ii);
       }
     }
   
@@ -103,31 +97,25 @@ PCSTFast::PCSTFast(int n_,
 
     if (uu_cluster.active && vv_cluster.active) {
       double event_time = cost / 2.0;
-      uu_part.next_event_time = event_time;
       uu_part.next_event_val = event_time;
-      vv_part.next_event_time = event_time;
       vv_part.next_event_val = event_time;
     } else if (uu_cluster.active) {
-      uu_part.next_event_time = cost;
       uu_part.next_event_val = cost;
-      vv_part.next_event_time = 0.0;
       vv_part.next_event_val = 0.0;
     } else if (vv_cluster.active) {
-      uu_part.next_event_time = 0.0;
       uu_part.next_event_val = 0.0;
-      vv_part.next_event_time = cost;
       vv_part.next_event_val = cost;
     } else {
-      uu_part.next_event_time = 0.0;
       uu_part.next_event_val = 0.0;
-      vv_part.next_event_time = 0.0;
       vv_part.next_event_val = 0.0;
     }
 
+    // current_time = 0, so the next event time for each edge is the
+    // same as the next_event_val
     uu_part.heap_node = uu_cluster.edge_parts.insert(
-        uu_part.next_event_time, 2 * ii);
+        uu_part.next_event_val, 2 * ii);
     vv_part.heap_node = vv_cluster.edge_parts.insert(
-        vv_part.next_event_time, 2 * ii + 1);
+        vv_part.next_event_val, 2 * ii + 1);
   }
 
   for (int ii = 0; ii < n; ++ii) {
@@ -450,13 +438,11 @@ bool PCSTFast::run(std::vector<int>* result_nodes,
         new_cluster.necessary = false;
         new_cluster.skip_up = -1;
         new_cluster.skip_up_sum = 0.0;
-        new_cluster.merge_time = -1;
         new_cluster.merged_into = -1;
 
         current_cluster.active = false;
         current_cluster.active_end_time = current_time;
         current_cluster.merged_into = new_cluster_index;
-        current_cluster.merge_time = current_time;
         current_cluster.moat = current_cluster.active_end_time
                                - current_cluster.active_start_time;
         clusters_deactivation.delete_element(current_cluster_index);
@@ -499,7 +485,6 @@ bool PCSTFast::run(std::vector<int>* result_nodes,
           }
         }
         other_cluster.merged_into = new_cluster_index;
-        other_cluster.merge_time = current_time;
 
         new_cluster.edge_parts = PairingHeapType::meld(
             &(current_cluster.edge_parts), &(other_cluster.edge_parts));
@@ -509,10 +494,10 @@ bool PCSTFast::run(std::vector<int>* result_nodes,
 
         if (new_cluster.active) {
           new_cluster.active_start_time = current_time;
-          new_cluster.becoming_inactive_time = current_time
-                                           + new_cluster.prize_sum
-                                           - new_cluster.subcluster_moat_sum;
-          clusters_deactivation.insert(new_cluster.becoming_inactive_time,
+          double becoming_inactive_time = current_time
+                                          + new_cluster.prize_sum
+                                          - new_cluster.subcluster_moat_sum;
+          clusters_deactivation.insert(becoming_inactive_time,
                                        new_cluster_index);
           if (!new_cluster.edge_parts.is_empty()) {
             double tmp_val;
@@ -524,7 +509,6 @@ bool PCSTFast::run(std::vector<int>* result_nodes,
         }
       } else if (other_cluster.active) {
         double next_event_time = current_time + remainder / 2.0;
-        next_edge_part.next_event_time = next_event_time;
         next_edge_part.next_event_val = sum_current_edge_part + remainder / 2.0;
         if (!current_cluster.edge_parts.is_empty()) {
           clusters_next_edge_event.delete_element(current_cluster_index);
@@ -536,7 +520,6 @@ bool PCSTFast::run(std::vector<int>* result_nodes,
         current_cluster.edge_parts.get_min(&tmp_val, &tmp_index);
         clusters_next_edge_event.insert(tmp_val, current_cluster_index);
 
-        other_edge_part.next_event_time = next_event_time;
         clusters_next_edge_event.delete_element(other_cluster_index);
         other_cluster.edge_parts.decrease_key(
             other_edge_part.heap_node,
@@ -556,7 +539,6 @@ bool PCSTFast::run(std::vector<int>* result_nodes,
         //////////////////////////////////////////
       } else {
         double next_event_time = current_time + remainder;
-        next_edge_part.next_event_time = next_event_time;
         next_edge_part.next_event_val = current_edge_cost
                                         - other_finished_moat_sum;
         if (!current_cluster.edge_parts.is_empty()) {
@@ -569,7 +551,6 @@ bool PCSTFast::run(std::vector<int>* result_nodes,
         current_cluster.edge_parts.get_min(&tmp_val, &tmp_index);
         clusters_next_edge_event.insert(tmp_val, current_cluster_index);
         
-        other_edge_part.next_event_time = other_cluster.active_end_time;
         other_cluster.edge_parts.decrease_key(
             other_edge_part.heap_node,
             other_cluster.active_end_time + other_edge_part.next_event_val

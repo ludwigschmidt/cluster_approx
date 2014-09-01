@@ -48,8 +48,6 @@ class PCSTFast {
   };
 
   struct EdgePart {
-    // TODO: can remove this property?
-    double next_event_time;
     double next_event_val;
     bool deleted;
     PairingHeapType::ItemHandle heap_node;
@@ -66,9 +64,6 @@ class PCSTFast {
     PairingHeapType edge_parts;
     double active_start_time;
     double active_end_time;
-    double merge_time;
-    // TODO: can remove this property?
-    double becoming_inactive_time;
     int merged_into;
     double prize_sum;
     double subcluster_moat_sum;
