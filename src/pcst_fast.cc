@@ -60,6 +60,7 @@ PCSTFast::PCSTFast(int n_,
 
     for (int ii = 0; ii < n; ++ii) {
       clusters.push_back(Cluster(&pairing_heap_buffer));
+      clusters[ii].active = (ii != root);
       clusters[ii].active_start_time = 0.0;
       clusters[ii].active_end_time = -1.0;
       if (ii == root) {
@@ -68,7 +69,6 @@ PCSTFast::PCSTFast(int n_,
       clusters[ii].merged_into = -1;
       clusters[ii].prize_sum = prizes[ii];
       clusters[ii].subcluster_moat_sum = 0.0;
-      clusters[ii].active = (ii != root);
       clusters[ii].moat = 0.0;
       clusters[ii].contains_root = (ii == root);
       clusters[ii].skip_up = -1;

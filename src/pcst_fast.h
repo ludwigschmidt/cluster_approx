@@ -62,12 +62,12 @@ class PCSTFast {
 
   struct Cluster {
     PairingHeapType edge_parts;
+    bool active;
     double active_start_time;
     double active_end_time;
     int merged_into;
     double prize_sum;
     double subcluster_moat_sum;
-    bool active;
     double moat;
     bool contains_root;
     int skip_up;
