@@ -20,6 +20,19 @@ class PCSTFast {
     kUnknownPruning,
   };
 
+  struct Statistics {
+    long long total_num_edge_events = 0;
+    long long num_deleted_edge_events = 0;
+    long long num_merged_edge_events = 0;
+    long long total_num_merge_events = 0;
+    long long num_active_active_merge_events = 0;
+    long long num_active_inactive_merge_events = 0;
+    long long total_num_edge_growth_events = 0;
+    long long num_active_active_edge_growth_events = 0;
+    long long num_active_inactive_edge_growth_events = 0;
+    long long num_cluster_events = 0;
+  };
+
   const static int kNoRoot = -1;
 
   static PruningMethod parse_pruning_method(const std::string& input);
@@ -38,7 +51,10 @@ class PCSTFast {
 
   bool run(std::vector<int>* result_nodes,
            std::vector<int>* result_edges);
- 
+
+  void get_statistics(Statistics* s);
+
+
  private:
   typedef PairingHeap<double, int> PairingHeapType;
   typedef PriorityQueue<double, int> PriorityQueueType;
@@ -90,6 +106,7 @@ class PCSTFast {
   PruningMethod pruning;
   int verbosity_level;
   void (*output_function)(const char*);
+  Statistics stats;
 
   std::vector<PairingHeapType::ItemHandle> pairing_heap_buffer;
   std::vector<EdgePart> edge_parts;

@@ -325,8 +325,25 @@ bool PCSTFast::run(std::vector<int>* result_nodes,
     //////////////////////////////////////////
 
     if (next_edge_time < next_cluster_time) {
+      stats.total_num_edge_events += 1;
+      
       current_time = next_edge_time;
       remove_next_edge_event(next_edge_cluster_index);
+
+      if (edge_parts[next_edge_part_index].deleted) {
+        stats.num_deleted_edge_events += 1;
+
+        //////////////////////////////////////////
+        if (verbosity_level >= 2) {
+          snprintf(output_buffer, kOutputBufferSize,
+              "Edge part %d already deleted, nothing to do\n",
+              next_edge_part_index);
+          output_function(output_buffer);
+        }
+        //////////////////////////////////////////
+
+        continue;
+      }
 
       // collect all the relevant information about the edge parts
       int other_edge_part_index = get_other_edge_part_index(
@@ -374,20 +391,8 @@ bool PCSTFast::run(std::vector<int>* result_nodes,
       }
       //////////////////////////////////////////
 
-      if (edge_parts[next_edge_part_index].deleted) {
-
-        //////////////////////////////////////////
-        if (verbosity_level >= 2) {
-          snprintf(output_buffer, kOutputBufferSize,
-              "Edge part already deleted, nothing to do\n");
-          output_function(output_buffer);
-        }
-        //////////////////////////////////////////
-
-        continue;
-      }
-
       if (current_cluster_index == other_cluster_index) {
+        stats.num_merged_edge_events += 1;
 
         //////////////////////////////////////////
         if (verbosity_level >= 2) {
@@ -403,6 +408,8 @@ bool PCSTFast::run(std::vector<int>* result_nodes,
       }
 
       if (remainder < eps) {
+        stats.total_num_merge_events += 1;
+
         phase1_result.push_back(next_edge_part_index / 2);
         edge_parts[other_edge_part_index].deleted = true;
 
@@ -452,6 +459,8 @@ bool PCSTFast::run(std::vector<int>* result_nodes,
         }
 
         if (other_cluster.active) {
+          stats.num_active_active_merge_events += 1;
+
           other_cluster.active = false;
           other_cluster.active_end_time = current_time;
           other_cluster.moat = other_cluster.active_end_time
@@ -462,6 +471,8 @@ bool PCSTFast::run(std::vector<int>* result_nodes,
           }
           num_active_clusters -= 1;
         } else {
+          stats.num_active_inactive_merge_events += 1;
+
           if (!other_cluster.contains_root) {
             double edge_event_update_time = current_time
                                             - other_cluster.active_end_time;
@@ -508,6 +519,9 @@ bool PCSTFast::run(std::vector<int>* result_nodes,
           num_active_clusters += 1;
         }
       } else if (other_cluster.active) {
+        stats.total_num_edge_growth_events += 1;
+        stats.num_active_active_edge_growth_events += 1;
+        
         double next_event_time = current_time + remainder / 2.0;
         next_edge_part.next_event_val = sum_current_edge_part + remainder / 2.0;
         if (!current_cluster.edge_parts.is_empty()) {
@@ -538,6 +552,9 @@ bool PCSTFast::run(std::vector<int>* result_nodes,
         }
         //////////////////////////////////////////
       } else {
+        stats.total_num_edge_growth_events += 1;
+        stats.num_active_inactive_edge_growth_events += 1;
+
         double next_event_time = current_time + remainder;
         next_edge_part.next_event_val = current_edge_cost
                                         - other_finished_moat_sum;
@@ -568,6 +585,8 @@ bool PCSTFast::run(std::vector<int>* result_nodes,
         //////////////////////////////////////////
       }
     } else {
+      stats.num_cluster_events += 1;
+
       // cluster deactivation is first
 
       current_time = next_cluster_time;
@@ -1021,4 +1040,9 @@ PCSTFast::~PCSTFast() {
   for (size_t ii = 0; ii < clusters.size(); ++ii) {
     clusters[ii].edge_parts.release_memory();
   }
+}
+
+
+void PCSTFast::get_statistics(PCSTFast::Statistics* s) {
+  *s = stats;
 }
