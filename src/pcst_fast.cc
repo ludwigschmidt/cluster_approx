@@ -448,7 +448,7 @@ bool PCSTFast::run(std::vector<int>* result_nodes,
         new_cluster.merged_into = -1;
 
         current_cluster.active = false;
-        current_cluster.active_end_time = current_time;
+        current_cluster.active_end_time = current_time + remainder;
         current_cluster.merged_into = new_cluster_index;
         current_cluster.moat = current_cluster.active_end_time
                                - current_cluster.active_start_time;
@@ -462,7 +462,7 @@ bool PCSTFast::run(std::vector<int>* result_nodes,
           stats.num_active_active_merge_events += 1;
 
           other_cluster.active = false;
-          other_cluster.active_end_time = current_time;
+          other_cluster.active_end_time = current_time + remainder;
           other_cluster.moat = other_cluster.active_end_time
                                - other_cluster.active_start_time;
           clusters_deactivation.delete_element(other_cluster_index);
@@ -474,7 +474,7 @@ bool PCSTFast::run(std::vector<int>* result_nodes,
           stats.num_active_inactive_merge_events += 1;
 
           if (!other_cluster.contains_root) {
-            double edge_event_update_time = current_time
+            double edge_event_update_time = current_time + remainder
                                             - other_cluster.active_end_time;
             other_cluster.edge_parts.add_to_heap(edge_event_update_time);
             inactive_merge_events.push_back(InactiveMergeEvent());
@@ -504,8 +504,8 @@ bool PCSTFast::run(std::vector<int>* result_nodes,
         new_cluster.subcluster_moat_sum += other_cluster.moat;
 
         if (new_cluster.active) {
-          new_cluster.active_start_time = current_time;
-          double becoming_inactive_time = current_time
+          new_cluster.active_start_time = current_time + remainder;
+          double becoming_inactive_time = current_time + remainder
                                           + new_cluster.prize_sum
                                           - new_cluster.subcluster_moat_sum;
           clusters_deactivation.insert(becoming_inactive_time,
