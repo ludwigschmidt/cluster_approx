@@ -46,19 +46,25 @@ run_pcst_fast_test: pcst_fast_test
 	./pcst_fast_test
 
 
-CLUSTER_GRID_OBJS = cluster_grid.o pcst_fast.o
-
 CLUSTER_GRID_PCST_MEXFILE_SRC = cluster_grid_pcst_mex_wrapper.cc cluster_grid.cc pcst_fast.cc
 CLUSTER_GRID_PCST_MEXFILE_SRC_DEPS = $(CLUSTER_GRID_PCST_MEXFILE_SRC) mex_helper.h cluster_grid.h pcst_fast.h
 
 cluster_grid_pcst_mexfile: $(CLUSTER_GRID_PCST_MEXFILE_SRC_DEPS:%=$(SRCDIR)/%)
 	$(MEX) -v CXXFLAGS="\$$CXXFLAGS $(MEXCXXFLAGS)" -output cluster_grid_pcst $(CLUSTER_GRID_PCST_MEXFILE_SRC:%=$(SRCDIR)/%)
 
+
 CLUSTER_GRID_PCST_BINSEARCH_MEXFILE_SRC = cluster_grid_pcst_binsearch_mex_wrapper.cc cluster_grid.cc pcst_fast.cc
 CLUSTER_GRID_PCST_BINSEARCH_MEXFILE_SRC_DEPS = $(CLUSTER_GRID_PCST_BINSEARCH_MEXFILE_SRC) mex_helper.h cluster_grid.h pcst_fast.h
 
 cluster_grid_pcst_binsearch_mexfile: $(CLUSTER_GRID_PCST_BINSEARCH_MEXFILE_SRC_DEPS:%=$(SRCDIR)/%)
 	$(MEX) -v CXXFLAGS="\$$CXXFLAGS $(MEXCXXFLAGS)" -output cluster_grid_pcst_binsearch $(CLUSTER_GRID_PCST_BINSEARCH_MEXFILE_SRC:%=$(SRCDIR)/%)
+
+
+PCST_FAST_MEXFILE_SRC = pcst_fast_mex_wrapper.cc pcst_fast.cc
+PCST_FAST_MEXFILE_SRC_DEPS = $(PCST_FAST_MEXFILE_SRC) mex_helper.h pcst_fast.h
+
+pcst_fast_mexfile: $(PCST_FAST_MEXFILE_SRC_DEPS:%=$(SRCDIR)/%)
+	$(MEX) -v CXXFLAGS="\$$CXXFLAGS $(MEXCXXFLAGS)" -output pcst_fast $(PCST_FAST_MEXFILE_SRC:%=$(SRCDIR)/%)
 
 
 PCST_FAST_SWIG_SRC = pcst_fast.cc

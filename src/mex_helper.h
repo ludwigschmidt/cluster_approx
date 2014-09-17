@@ -212,6 +212,26 @@ bool get_double_matrix(const mxArray* raw_data,
   return true;
 }
 
+bool get_double_matrix_as_int(const mxArray* raw_data,
+    std::vector<std::vector<int> >* data) {
+  std::vector<std::vector<double> > tmp;
+  if (!get_double_matrix(raw_data, &tmp)) {
+    return false;
+  }
+  if (data->size() != tmp.size()) {
+    data->resize(tmp.size());
+  }
+  for (size_t ii = 0; ii < tmp.size(); ++ii) {
+    if ((*data)[ii].size() != tmp[ii].size()) {
+      (*data)[ii].resize(tmp[ii].size());
+    }
+    for (size_t jj = 0; jj < tmp[ii].size(); ++jj) {
+      (*data)[ii][jj] = static_cast<int>(my_round(tmp[ii][jj]));
+    }
+  }
+  return true;
+}
+
 bool get_fields(const mxArray* struc, std::vector<std::string>* fields) {
   if (!mxIsStruct(struc)) {
     return false;
@@ -355,6 +375,21 @@ void set_double_row_vector(mxArray** raw_data,
   double* result_linear = static_cast<double*>(mxGetData(*raw_data));
   for (size_t ii = 0; ii < c; ++ii) {
     result_linear[ii] = (data[ii] ? 1.0 : 0.0);
+  }
+}
+
+void set_double_row_vector(mxArray** raw_data,
+    const std::vector<int>& data) {
+  int numdims = 2;
+  mwSize dims[2];
+  size_t r = 1;
+  size_t c = data.size();
+  dims[0] = r;
+  dims[1] = c;
+  *raw_data = mxCreateNumericArray(numdims, dims, mxDOUBLE_CLASS, mxREAL);
+  double* result_linear = static_cast<double*>(mxGetData(*raw_data));
+  for (size_t ii = 0; ii < c; ++ii) {
+    result_linear[ii] = data[ii];
   }
 }
 
