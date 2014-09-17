@@ -37,8 +37,8 @@ class PCSTFast {
 
   static PruningMethod parse_pruning_method(const std::string& input);
 
-  PCSTFast(int n_,
-           const std::vector<std::pair<int, int> >& edges_,
+
+  PCSTFast(const std::vector<std::pair<int, int> >& edges_,
            const std::vector<double>& prizes_,
            const std::vector<double>& costs_,
            int root_,
@@ -97,7 +97,7 @@ class PCSTFast {
         : edge_parts(heap_buffer) {}
   };
 
-  int n;
+
   const std::vector<std::pair<int, int> >& edges;
   const std::vector<double>& prizes;
   const std::vector<double>& costs;

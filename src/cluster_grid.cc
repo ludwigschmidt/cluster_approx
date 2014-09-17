@@ -20,7 +20,6 @@ char output_buffer[kOutputBufferSize];
 void build_grid_graph(const Matrix2d& values,
                       bool include_root,
                       double gamma,
-                      int* n,
                       vector<EdgePair>* edges,
                       vector<double>* prizes,
                       vector<double>* costs,
@@ -29,7 +28,6 @@ void build_grid_graph(const Matrix2d& values,
   prizes->clear();
   costs->clear();
   *root = PCSTFast::kNoRoot;
-  *n = 0;
   int height = static_cast<int>(values.size());
   int width;
   if (height == 0) {
@@ -38,12 +36,12 @@ void build_grid_graph(const Matrix2d& values,
   } else {
     width = static_cast<int>(values[0].size());
   }
-  *n = width * height;
+  int n = width * height;
   if (include_root) {
-    *n += 1;
+    n += 1;
   }
 
-  prizes->resize(*n);
+  prizes->resize(n);
 
   for (int yy = 0; yy < height; ++yy) {
     for (int xx = 0; xx < width; ++xx) {
@@ -65,7 +63,7 @@ void build_grid_graph(const Matrix2d& values,
   }
 
   if (include_root) {
-    *root = *n - 1;
+    *root = n - 1;
     (*prizes)[*root] = 0.0;
     double root_edge_cost = 1.0 + gamma;
 
@@ -165,24 +163,18 @@ bool cluster_grid_pcst(const Matrix2d& values,
                        Matrix2b* result,
                        int* result_sparsity,
                        int* result_num_clusters) {
-  int n;
   vector<EdgePair> edges;
   vector<double> prizes;
   vector<double> costs;
   int root;
 
-  build_grid_graph(values, include_root, gamma, &n, &edges, &prizes, &costs,
-                   &root);
-
-  if (n == 0) {
-    return false;
-  }
+  build_grid_graph(values, include_root, gamma, &edges, &prizes, &costs, &root);
 
   for (size_t ii = 0; ii < costs.size(); ++ii) {
     costs[ii] *= lambda;
   }
 
-  PCSTFast algo(n, edges, prizes, costs, root, target_num_clusters, pruning,
+  PCSTFast algo(edges, prizes, costs, root, target_num_clusters, pruning,
                 verbosity_level, output_function);
 
   vector<int> forest_node_indices;
@@ -214,17 +206,12 @@ bool cluster_grid_pcst_binsearch(const Matrix2d& values,
                                  void (*output_function)(const char*),
                                  Matrix2b* result,
                                  int* result_sparsity) {
-  int n;
   vector<EdgePair> edges;
   vector<double> prizes;
   vector<double> costs;
   int root;
   
-  build_grid_graph(values, false, 0.0, &n, &edges, &prizes, &costs, &root);
-
-  if (n == 0) {
-    return false;
-  }
+  build_grid_graph(values, false, 0.0, &edges, &prizes, &costs, &root);
 
   vector<double> cur_costs(costs);
 
@@ -266,11 +253,11 @@ bool cluster_grid_pcst_binsearch(const Matrix2d& values,
     } else if (using_max_value) {
       guess_text = max_value_text;
     }
-    snprintf(output_buffer, kOutputBufferSize, "n = %d  c: %d  k_low: %d  "
+    snprintf(output_buffer, kOutputBufferSize, "n = %lu  c: %d  k_low: %d  "
         "k_high: %d  l_low: %e  l_high: %e  max_num_iter: %d  (using %s for "
         "initial guess).\n",
-        n, target_num_clusters, sparsity_low, sparsity_high, lambda_low,
-        lambda_high, max_num_iter, guess_text);
+        prizes.size(), target_num_clusters, sparsity_low, sparsity_high,
+        lambda_low, lambda_high, max_num_iter, guess_text);
     output_function(output_buffer);
   }
   
@@ -289,7 +276,7 @@ bool cluster_grid_pcst_binsearch(const Matrix2d& values,
       cur_costs[ii] = lambda_high * costs[ii];
     }
 
-    PCSTFast algo(n, edges, prizes, cur_costs, root, target_num_clusters,
+    PCSTFast algo(edges, prizes, cur_costs, root, target_num_clusters,
                   pruning, verbosity_level, output_function);
 
     bool res = algo.run(&forest_node_indices, &forest_edge_indices);
@@ -331,7 +318,7 @@ bool cluster_grid_pcst_binsearch(const Matrix2d& values,
       cur_costs[ii] = lambda_mid * costs[ii];
     }
 
-    PCSTFast algo(n, edges, prizes, cur_costs, root, target_num_clusters,
+    PCSTFast algo(edges, prizes, cur_costs, root, target_num_clusters,
                   pruning, verbosity_level, output_function);
 
     bool res = algo.run(&forest_node_indices, &forest_edge_indices);
@@ -374,7 +361,7 @@ bool cluster_grid_pcst_binsearch(const Matrix2d& values,
     cur_costs[ii] = lambda_high * costs[ii];
   }
 
-  PCSTFast algo(n, edges, prizes, cur_costs, root, target_num_clusters,
+  PCSTFast algo(edges, prizes, cur_costs, root, target_num_clusters,
                 pruning, verbosity_level, output_function);
 
   bool res = algo.run(&forest_node_indices, &forest_edge_indices);

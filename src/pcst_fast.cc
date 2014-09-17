@@ -32,8 +32,7 @@ PCSTFast::PruningMethod PCSTFast::parse_pruning_method(
 }
 
 
-PCSTFast::PCSTFast(int n_,
-                   const std::vector<std::pair<int, int> >& edges_,
+PCSTFast::PCSTFast(const std::vector<std::pair<int, int> >& edges_,
                    const std::vector<double>& prizes_,
                    const std::vector<double>& costs_,
                    int root_,
@@ -41,13 +40,13 @@ PCSTFast::PCSTFast(int n_,
                    PruningMethod pruning_,
                    int verbosity_level_,
                    void (*output_function_)(const char*))
-    : n(n_), edges(edges_), prizes(prizes_), costs(costs_), root(root_),
+    : edges(edges_), prizes(prizes_), costs(costs_), root(root_),
       target_num_active_clusters(target_num_active_clusters_),
       pruning(pruning_), verbosity_level(verbosity_level_),
       output_function(output_function_) {
     
     edge_parts.resize(2 * edges.size());
-    node_deleted.resize(n, false);
+    node_deleted.resize(prizes.size(), false);
 
     edge_info.resize(edges_.size());
     for (size_t ii = 0; ii < edge_info.size(); ++ii) {
@@ -58,7 +57,7 @@ PCSTFast::PCSTFast(int n_,
     // TODO: set to min input value / 2.0?
     eps = 1e-12;
 
-    for (int ii = 0; ii < n; ++ii) {
+    for (int ii = 0; ii < static_cast<int>(prizes.size()); ++ii) {
       clusters.push_back(Cluster(&pairing_heap_buffer));
       clusters[ii].active = (ii != root);
       clusters[ii].active_start_time = 0.0;
@@ -118,7 +117,7 @@ PCSTFast::PCSTFast(int n_,
         vv_part.next_event_val, 2 * ii + 1);
   }
 
-  for (int ii = 0; ii < n; ++ii) {
+  for (int ii = 0; ii < static_cast<int>(prizes.size()); ++ii) {
     if (clusters[ii].active) {
       if (!clusters[ii].edge_parts.is_empty()) {
         double val;
@@ -285,7 +284,7 @@ bool PCSTFast::run(std::vector<int>* result_nodes,
   //////////////////////////////////////////
 
   vector<int> phase1_result;
-  int num_active_clusters = n;
+  int num_active_clusters = prizes.size();
   if (root >= 0) {
     num_active_clusters -= 1;
   }
@@ -615,7 +614,7 @@ bool PCSTFast::run(std::vector<int>* result_nodes,
 
 
   // Mark root cluster or active clusters as good.
-  node_good.resize(n, false);
+  node_good.resize(prizes.size(), false);
 
   if (root >= 0) {
     // find the root cluster
@@ -663,7 +662,7 @@ bool PCSTFast::run(std::vector<int>* result_nodes,
   }
 
   vector<int> phase3_result;
-  phase3_neighbors.resize(n);
+  phase3_neighbors.resize(prizes.size());
   for (size_t ii = 0; ii < phase2_result.size(); ++ii) {
     int cur_edge_index = phase2_result[ii];
     int uu = edges[cur_edge_index].first;
@@ -780,10 +779,10 @@ bool PCSTFast::run(std::vector<int>* result_nodes,
     }
     //////////////////////////////////////////
 
-    final_component_label.resize(n, -1);
+    final_component_label.resize(prizes.size(), -1);
     root_component_index = -1;
-    strong_pruning_parent.resize(n, make_pair(-1, -1.0));
-    strong_pruning_payoff.resize(n, -1.0);
+    strong_pruning_parent.resize(prizes.size(), make_pair(-1, -1.0));
+    strong_pruning_payoff.resize(prizes.size(), -1.0);
 
     for (size_t ii = 0; ii < phase2_result.size(); ++ii) {
       int cur_node_index = edges[phase2_result[ii]].first;
@@ -994,7 +993,7 @@ int PCSTFast::find_best_component_root(int component_index) {
 
 void PCSTFast::build_phase3_node_set(std::vector<int>* node_set) {
   node_set->clear();
-  for (int ii = 0; ii < n; ++ii) {
+  for (int ii = 0; ii < static_cast<int>(prizes.size()); ++ii) {
     if (!node_deleted[ii] && node_good[ii]) {
       node_set->push_back(ii);
     }
@@ -1004,7 +1003,7 @@ void PCSTFast::build_phase3_node_set(std::vector<int>* node_set) {
 
 void PCSTFast::build_phase2_node_set(std::vector<int>* node_set) {
   node_set->clear();
-  for (int ii = 0; ii < n; ++ii) {
+  for (int ii = 0; ii < static_cast<int>(prizes.size()); ++ii) {
     if (node_good[ii]) {
       node_set->push_back(ii);
     }
@@ -1014,7 +1013,7 @@ void PCSTFast::build_phase2_node_set(std::vector<int>* node_set) {
 
 void PCSTFast::build_phase1_node_set(const std::vector<int>& edge_set,
                                      std::vector<int>* node_set) {
-  vector<int> included(n, false);
+  vector<int> included(prizes.size(), false);
   node_set->clear();
   for (size_t ii = 0; ii < edge_set.size(); ++ii) {
     int uu = edges[edge_set[ii]].first;
@@ -1028,7 +1027,7 @@ void PCSTFast::build_phase1_node_set(const std::vector<int>& edge_set,
       node_set->push_back(vv);
     }
   }
-  for (int ii = 0; ii < n; ++ii) {
+  for (int ii = 0; ii < static_cast<int>(prizes.size()); ++ii) {
     if (node_good[ii] && !included[ii]) {
       node_set->push_back(ii);
     }

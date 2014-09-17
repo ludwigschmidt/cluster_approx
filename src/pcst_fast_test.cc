@@ -16,8 +16,7 @@ using std::vector;
 const int kVerbosityLevel = 0;
 
 
-void RunAlgo(int n,
-             const vector<pair<int, int> >& edges,
+void RunAlgo(const vector<pair<int, int> >& edges,
              const vector<double>& prizes,
              const vector<double>& costs,
              int root,
@@ -28,7 +27,7 @@ void RunAlgo(int n,
 
   vector<int> node_result;
   vector<int> edge_result;
-  PCSTFast algo(n, edges, prizes, costs, root, target_num_active_clusters,
+  PCSTFast algo(edges, prizes, costs, root, target_num_active_clusters,
                 pruning, kVerbosityLevel, WriteToStderr);
   ASSERT_TRUE(algo.run(&node_result, &edge_result));
 
@@ -47,8 +46,7 @@ void RunAlgo(int n,
 
 
 template <size_t N1, size_t N2, size_t N3, size_t N4>
-void RunAlgo(int n,
-             const vector<pair<int, int> >& edges,
+void RunAlgo(const vector<pair<int, int> >& edges,
              const double (&prizes)[N1],
              const double (&costs)[N2],
              int root,
@@ -62,14 +60,13 @@ void RunAlgo(int n,
                                     end(expected_node_result));
   vector<int> expected_edge_result_(begin(expected_edge_result),
                                     end(expected_edge_result));
-  RunAlgo(n, edges, prizes_, costs_, root, target_num_active_clusters, pruning,
+  RunAlgo(edges, prizes_, costs_, root, target_num_active_clusters, pruning,
           expected_node_result_, expected_edge_result_);
 }
 
 
 template <size_t N1, size_t N2, size_t N3>
-void RunAlgo(int n,
-             const vector<pair<int, int> >& edges,
+void RunAlgo(const vector<pair<int, int> >& edges,
              const double (&prizes)[N1],
              const double (&costs)[N2],
              int root,
@@ -81,13 +78,12 @@ void RunAlgo(int n,
   vector<int> expected_node_result_(begin(expected_node_result),
                                     end(expected_node_result));
   vector<int> expected_edge_result_(0);
-  RunAlgo(n, edges, prizes_, costs_, root, target_num_active_clusters, pruning,
+  RunAlgo(edges, prizes_, costs_, root, target_num_active_clusters, pruning,
           expected_node_result_, expected_edge_result_);
 }
 
 
 TEST(PCSTFastTest, SimpleTestRootedNoPruning) {
-  int n = 3;
   vector<pair<int, int> > edges;
   edges.push_back(make_pair(0, 1));
   edges.push_back(make_pair(1, 2));
@@ -100,13 +96,12 @@ TEST(PCSTFastTest, SimpleTestRootedNoPruning) {
   const int node_result[] = {0, 1, 2};
   const int edge_result[] = {0, 1};
 
-  RunAlgo(n, edges, prizes, costs, root, target_num_active_clusters, pruning,
+  RunAlgo(edges, prizes, costs, root, target_num_active_clusters, pruning,
           node_result, edge_result);
 }
 
 
 TEST(PCSTFastTest, SimpleTestUnrootedNoPruning) {
-  int n = 3;
   vector<pair<int, int> > edges;
   edges.push_back(make_pair(0, 1));
   edges.push_back(make_pair(1, 2));
@@ -119,13 +114,12 @@ TEST(PCSTFastTest, SimpleTestUnrootedNoPruning) {
   const int node_result[] = {1, 2};
   const int edge_result[] = {1};
 
-  RunAlgo(n, edges, prizes, costs, root, target_num_active_clusters, pruning,
+  RunAlgo(edges, prizes, costs, root, target_num_active_clusters, pruning,
           node_result, edge_result);
 }
 
 
 TEST(PCSTFastTest, SimpleTestUnrootedGWPruning) {
-  int n = 3;
   vector<pair<int, int> > edges;
   edges.push_back(make_pair(0, 1));
   edges.push_back(make_pair(1, 2));
@@ -138,13 +132,12 @@ TEST(PCSTFastTest, SimpleTestUnrootedGWPruning) {
   const int node_result[] = {1, 2};
   const int edge_result[] = {1};
 
-  RunAlgo(n, edges, prizes, costs, root, target_num_active_clusters, pruning,
+  RunAlgo(edges, prizes, costs, root, target_num_active_clusters, pruning,
           node_result, edge_result);
 }
 
 
 TEST(PCSTFastTest, SimpleTestUnrootedStrongPruning) {
-  int n = 3;
   vector<pair<int, int> > edges;
   edges.push_back(make_pair(0, 1));
   edges.push_back(make_pair(1, 2));
@@ -157,13 +150,12 @@ TEST(PCSTFastTest, SimpleTestUnrootedStrongPruning) {
   const int node_result[] = {1, 2};
   const int edge_result[] = {1};
 
-  RunAlgo(n, edges, prizes, costs, root, target_num_active_clusters, pruning,
+  RunAlgo(edges, prizes, costs, root, target_num_active_clusters, pruning,
           node_result, edge_result);
 }
 
 
 TEST(PCSTFastTest, Simple2TestRootedNoPruning) {
-  int n = 4;
   vector<pair<int, int> > edges;
   edges.push_back(make_pair(0, 1));
   edges.push_back(make_pair(1, 2));
@@ -177,13 +169,12 @@ TEST(PCSTFastTest, Simple2TestRootedNoPruning) {
   const int node_result[] = {0, 1, 2, 3};
   const int edge_result[] = {1, 2};
 
-  RunAlgo(n, edges, prizes, costs, root, target_num_active_clusters, pruning,
+  RunAlgo(edges, prizes, costs, root, target_num_active_clusters, pruning,
           node_result, edge_result);
 }
 
 
 TEST(PCSTFastTest, Simple2TestRootedGWPruning) {
-  int n = 4;
   vector<pair<int, int> > edges;
   edges.push_back(make_pair(0, 1));
   edges.push_back(make_pair(1, 2));
@@ -197,13 +188,12 @@ TEST(PCSTFastTest, Simple2TestRootedGWPruning) {
   const int node_result[] = {0};
   // edge result should be empty
 
-  RunAlgo(n, edges, prizes, costs, root, target_num_active_clusters, pruning,
+  RunAlgo(edges, prizes, costs, root, target_num_active_clusters, pruning,
           node_result);
 }
 
 
 TEST(PCSTFastTest, Simple3TestRootedNoPruning) {
-  int n = 4;
   vector<pair<int, int> > edges;
   edges.push_back(make_pair(0, 1));
   edges.push_back(make_pair(1, 2));
@@ -217,13 +207,12 @@ TEST(PCSTFastTest, Simple3TestRootedNoPruning) {
   const int node_result[] = {0, 1, 2, 3};
   const int edge_result[] = {0, 1, 2};
 
-  RunAlgo(n, edges, prizes, costs, root, target_num_active_clusters, pruning,
+  RunAlgo(edges, prizes, costs, root, target_num_active_clusters, pruning,
           node_result, edge_result);
 }
 
 
 TEST(PCSTFastTest, Simple3TestRootedGWPruning) {
-  int n = 4;
   vector<pair<int, int> > edges;
   edges.push_back(make_pair(0, 1));
   edges.push_back(make_pair(1, 2));
@@ -237,13 +226,12 @@ TEST(PCSTFastTest, Simple3TestRootedGWPruning) {
   const int node_result[] = {0, 1, 2, 3};
   const int edge_result[] = {0, 1, 2};
 
-  RunAlgo(n, edges, prizes, costs, root, target_num_active_clusters, pruning,
+  RunAlgo(edges, prizes, costs, root, target_num_active_clusters, pruning,
           node_result, edge_result);
 }
 
 
 TEST(PCSTFastTest, Simple4TestRootedNoPruning) {
-  int n = 3;
   vector<pair<int, int> > edges;
   edges.push_back(make_pair(0, 1));
   edges.push_back(make_pair(1, 2));
@@ -256,13 +244,12 @@ TEST(PCSTFastTest, Simple4TestRootedNoPruning) {
   const int node_result[] = {0, 1, 2};
   const int edge_result[] = {1};
 
-  RunAlgo(n, edges, prizes, costs, root, target_num_active_clusters, pruning,
+  RunAlgo(edges, prizes, costs, root, target_num_active_clusters, pruning,
           node_result, edge_result);
 }
 
 
 TEST(PCSTFastTest, Simple4TestRootedGWPruning) {
-  int n = 3;
   vector<pair<int, int> > edges;
   edges.push_back(make_pair(0, 1));
   edges.push_back(make_pair(1, 2));
@@ -275,13 +262,12 @@ TEST(PCSTFastTest, Simple4TestRootedGWPruning) {
   const int node_result[] = {0};
   // no edges expected
 
-  RunAlgo(n, edges, prizes, costs, root, target_num_active_clusters, pruning,
+  RunAlgo(edges, prizes, costs, root, target_num_active_clusters, pruning,
           node_result);
 }
 
 
 TEST(PCSTFastTest, Simple4TestUnRootedGWPruning) {
-  int n = 3;
   vector<pair<int, int> > edges;
   edges.push_back(make_pair(0, 1));
   edges.push_back(make_pair(1, 2));
@@ -294,13 +280,12 @@ TEST(PCSTFastTest, Simple4TestUnRootedGWPruning) {
   const int node_result[] = {0, 1, 2};
   const int edge_result[] = {1};
 
-  RunAlgo(n, edges, prizes, costs, root, target_num_active_clusters, pruning,
+  RunAlgo(edges, prizes, costs, root, target_num_active_clusters, pruning,
           node_result, edge_result);
 }
 
 
 TEST(PCSTFastTest, Simple4bTestUnRootedGWPruning) {
-  int n = 3;
   vector<pair<int, int> > edges;
   edges.push_back(make_pair(0, 1));
   edges.push_back(make_pair(1, 2));
@@ -313,13 +298,12 @@ TEST(PCSTFastTest, Simple4bTestUnRootedGWPruning) {
   const int node_result[] = {0};
   // no edges expected
 
-  RunAlgo(n, edges, prizes, costs, root, target_num_active_clusters, pruning,
+  RunAlgo(edges, prizes, costs, root, target_num_active_clusters, pruning,
           node_result);
 }
 
 
 TEST(PCSTFastTest, Simple5TestUnRootedGWPruning) {
-  int n = 4;
   vector<pair<int, int> > edges;
   edges.push_back(make_pair(0, 1));
   edges.push_back(make_pair(1, 2));
@@ -333,13 +317,12 @@ TEST(PCSTFastTest, Simple5TestUnRootedGWPruning) {
   const int node_result[] = {0, 2, 3};
   const int edge_result[] = {2};
 
-  RunAlgo(n, edges, prizes, costs, root, target_num_active_clusters, pruning,
+  RunAlgo(edges, prizes, costs, root, target_num_active_clusters, pruning,
           node_result, edge_result);
 }
 
 
 TEST(PCSTFastTest, Medium1TestRootedGWPruning) {
-  int n = 10;
   vector<pair<int, int> > edges;
   edges.push_back(make_pair(0, 1));
   edges.push_back(make_pair(1, 2));
@@ -406,13 +389,12 @@ TEST(PCSTFastTest, Medium1TestRootedGWPruning) {
   const int node_result[] = {3, 4, 6, 7, 8};
   const int edge_result[] = {16, 20, 21, 23};
 
-  RunAlgo(n, edges, prizes, costs, root, target_num_active_clusters, pruning,
+  RunAlgo(edges, prizes, costs, root, target_num_active_clusters, pruning,
           node_result, edge_result);
 }
 
 
 TEST(PCSTFastTest, Simple6TestUnRootedGWPruning) {
-  int n = 8;
   vector<pair<int, int> > edges;
   edges.push_back(make_pair(0, 1));
   edges.push_back(make_pair(1, 2));
@@ -443,13 +425,12 @@ TEST(PCSTFastTest, Simple6TestUnRootedGWPruning) {
   const int node_result[] = {0, 1, 2, 3, 4, 5, 6, 7};
   const int edge_result[] = {0, 1, 2, 3, 4, 5, 6};
 
-  RunAlgo(n, edges, prizes, costs, root, target_num_active_clusters, pruning,
+  RunAlgo(edges, prizes, costs, root, target_num_active_clusters, pruning,
           node_result, edge_result);
 }
 
 
 TEST(PCSTFastTest, Simple7TestUnrootedStrongPruning) {
-  int n = 5;
   vector<pair<int, int> > edges;
   edges.push_back(make_pair(0, 1));
   edges.push_back(make_pair(0, 2));
@@ -464,13 +445,12 @@ TEST(PCSTFastTest, Simple7TestUnrootedStrongPruning) {
   const int node_result[] = {1};
   // no edges expected
 
-  RunAlgo(n, edges, prizes, costs, root, target_num_active_clusters, pruning,
+  RunAlgo(edges, prizes, costs, root, target_num_active_clusters, pruning,
           node_result);
 }
 
 
 TEST(PCSTFastTest, Simple7TestUnrootedGWPruning) {
-  int n = 5;
   vector<pair<int, int> > edges;
   edges.push_back(make_pair(0, 1));
   edges.push_back(make_pair(0, 2));
@@ -485,7 +465,7 @@ TEST(PCSTFastTest, Simple7TestUnrootedGWPruning) {
   const int node_result[] = {0, 1, 2, 3, 4};
   const int edge_result[] = {0, 1, 2, 3};
 
-  RunAlgo(n, edges, prizes, costs, root, target_num_active_clusters, pruning,
+  RunAlgo(edges, prizes, costs, root, target_num_active_clusters, pruning,
           node_result, edge_result);
 }
 
