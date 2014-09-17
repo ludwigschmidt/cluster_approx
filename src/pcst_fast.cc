@@ -10,6 +10,18 @@ using std::make_pair;
 using std::vector;
 
 
+PCSTFast::Statistics::Statistics() : total_num_edge_events(0),
+                                     num_deleted_edge_events(0),
+                                     num_merged_edge_events(0),
+                                     total_num_merge_events(0),
+                                     num_active_active_merge_events(0),
+                                     num_active_inactive_merge_events(0),
+                                     total_num_edge_growth_events(0),
+                                     num_active_active_edge_growth_events(0),
+                                     num_active_inactive_edge_growth_events(0),
+                                     num_cluster_events(0) { };
+
+
 PCSTFast::PruningMethod PCSTFast::parse_pruning_method(
     const std::string& input) {
   PruningMethod result = kUnknownPruning;
