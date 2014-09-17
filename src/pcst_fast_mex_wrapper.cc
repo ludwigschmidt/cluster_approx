@@ -88,7 +88,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     if (node1 == node2) {
       mexErrMsgTxt("Loops are not allowed.");
     }
-    edges.push_back(make_pair(node1 - 1, node2 - 1));
+    edges[ii] = make_pair(node1 - 1, node2 - 1);
   }
   if (!edges_unique(edges)) {
     mexErrMsgTxt("Duplicate edges are not allowed.");
@@ -97,7 +97,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   // Get edge costs
   bool costs_are_column_vector;
   vector<double> costs;
-  if (!get_double_vector(prhs[1], &costs, &costs_are_column_vector)) {
+  if (!get_double_vector(prhs[2], &costs, &costs_are_column_vector)) {
     mexErrMsgTxt("Could not read the edge costs as a double vector.");
   }
   if (static_cast<int>(costs.size()) != m) {
@@ -195,7 +195,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   }
 
   if (nlhs >= 2) {
-    set_double_row_vector(&(plhs[0]), result_edges);
+    set_double_row_vector(&(plhs[1]), result_edges);
   }
   
   return;
