@@ -191,10 +191,16 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   }
 
   if (nlhs >= 1) {
+    for (size_t ii = 0; ii < result_nodes.size(); ++ii) {
+      result_nodes[ii] += 1;
+    }
     set_double_row_vector(&(plhs[0]), result_nodes);
   }
 
   if (nlhs >= 2) {
+    for (size_t ii = 0; ii < result_edges.size(); ++ii) {
+      result_edges[ii] += 1;
+    }
     set_double_row_vector(&(plhs[1]), result_edges);
   }
   
