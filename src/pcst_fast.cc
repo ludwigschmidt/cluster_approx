@@ -624,6 +624,15 @@ bool PCSTFast::run(std::vector<int>* result_nodes,
     }
   }
 
+  //////////////////////////////////////////
+  if (verbosity_level >= 1) {
+    snprintf(output_buffer, kOutputBufferSize,
+        "Finished GW clustering: final event time %lf, number of edge events "
+        "%lld\n", current_time, stats.total_num_edge_events);
+    output_function(output_buffer);
+  }
+  //////////////////////////////////////////
+
 
   // Mark root cluster or active clusters as good.
   node_good.resize(prizes.size(), false);
