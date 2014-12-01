@@ -67,7 +67,7 @@ PCSTFast::PCSTFast(const std::vector<std::pair<int, int> >& edges_,
 
     current_time = 0.0;
     // TODO: set to min input value / 2.0?
-    eps = 1e-12;
+    eps = 1e-10;
 
     for (int ii = 0; ii < static_cast<int>(prizes.size()); ++ii) {
       clusters.push_back(Cluster(&pairing_heap_buffer));
@@ -418,7 +418,7 @@ bool PCSTFast::run(std::vector<int>* result_nodes,
         continue;
       }
 
-      if (remainder < eps) {
+      if (remainder < eps * current_edge_cost) {
         stats.total_num_merge_events += 1;
 
         phase1_result.push_back(next_edge_part_index / 2);
