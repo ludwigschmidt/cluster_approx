@@ -16,7 +16,6 @@ void output_function(const char* output) {
 }
 
 std::pair<std::vector<int>, std::vector<int> > pcst_fast(
-    int n,
     const std::vector<std::pair<int, int> >& edges,
     const std::vector<double>& prizes,
     const std::vector<double>& costs,
@@ -26,7 +25,7 @@ std::pair<std::vector<int>, std::vector<int> > pcst_fast(
     int verbosity_level) {
   PCSTFast::PruningMethod pruning_method =
       PCSTFast::parse_pruning_method(pruning);
-  PCSTFast algo(n, edges, prizes, costs, root, num_clusters,
+  PCSTFast algo(edges, prizes, costs, root, num_clusters,
                 pruning_method, verbosity_level, output_function);
   std::vector<int> result_nodes;
   std::vector<int> result_edges;
