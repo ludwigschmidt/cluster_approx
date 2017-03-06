@@ -11,3 +11,4 @@ pcst_fast_test
 pcst_fast.py*
 src/main_pcst
 src/main_cluster_grid
+.DS_Store
