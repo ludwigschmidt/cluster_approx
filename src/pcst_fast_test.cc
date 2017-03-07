@@ -468,10 +468,3 @@ TEST(PCSTFastTest, Simple7TestUnrootedGWPruning) {
   RunAlgo(edges, prizes, costs, root, target_num_active_clusters, pruning,
           node_result, edge_result);
 }
-
-
-int main(int argc, char **argv) {
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}
-

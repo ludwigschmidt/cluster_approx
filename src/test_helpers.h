@@ -1,4 +1,4 @@
-#ifndef __TEST_HELPERS_H___
+#ifndef __TEST_HELPERS_H__
 #define __TEST_HELPERS_H__
 
 #include <cstdio>
@@ -12,7 +12,7 @@ template <typename T, size_t N>
 T* end(T(&arr)[N]) { return &arr[0]+N; }
 
 void WriteToStderr(const char* s) {
-  fprintf(stderr, s);
+  fprintf(stderr, "%s", s);
   fflush(stderr);
 }
 
