@@ -1,4 +1,4 @@
-cluster_approx
+pcsf_fast
 ==============
 
 A library for clustering graph-structured data based on the prize-collecting Steiner forest (PCSF) problem. See [this paper](http://www.jmlr.org/proceedings/papers/v37/hegde15.html) for details about the algorithm. The code for the sparse recovery experiments in the paper can be found [here](https://github.com/ludwigschmidt/graph_sparsity_experiments).
