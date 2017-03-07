@@ -2,9 +2,9 @@
 #
 # This makefile is based on http://make.paulandlesley.org/autodep.html .
 
-CXX = g++
+CXX = clang++
 MEX = mex
-CXXFLAGS = -Wall -Wextra -O3 -fPIC
+CXXFLAGS = -std=c++11 -Wall -Wextra -O3 -fPIC
 MEXCXXFLAGS = -Wall -Wextra -O3
 GTESTDIR = /usr/src/gtest
 
@@ -67,16 +67,10 @@ pcst_fast_mexfile: $(PCST_FAST_MEXFILE_SRC_DEPS:%=$(SRCDIR)/%)
 	$(MEX) -v CXXFLAGS="\$$CXXFLAGS $(MEXCXXFLAGS)" -output pcst_fast $(PCST_FAST_MEXFILE_SRC:%=$(SRCDIR)/%)
 
 
-PCST_FAST_SWIG_SRC = pcst_fast.cc
-PCST_FAST_SWIG_SRC_DEPS = $(PCST_FAST_SWIG_SRC) pcst_fast_swig.h pcst_fast.h pcst_fast.i
-
-pcst_fast_swig: $(PCST_FAST_SWIG_SRC_DEPS:%=$(SRCDIR)/%)
-	swig -c++ -python -builtin -outcurrentdir $(SRCDIR)/pcst_fast.i
-	mkdir -p $(OBJDIR)
-	$(CXX) $(CXXFLAGS) -c $(SRCDIR)/pcst_fast.cc -o $(OBJDIR)/pcst_fast.o
-	$(CXX) $(CXXFLAGS) `python-config --includes` -c pcst_fast_wrap.cxx -I $(SRCDIR) -o $(OBJDIR)/pcst_fast_wrap.o
-	$(CXX) -shared $(OBJDIR)/pcst_fast.o $(OBJDIR)/pcst_fast_wrap.o -o _pcst_fast.so `python-config --ldflags` 
-	rm -f pcst_fast_wrap.cxx
+PCST_FAST_PY_SRC = pcst_fast_pybind.cc
+PCST_FAST_PY_SRC_DEPS = $(PCST_FAST_PY_SRC) pcst_fast.h pcst_fast.cc
+pcst_fast_py: $(PCST_FAST_PY_SRC_DEPS:%=$(SRCDIR)/%)
+	$(CXX) $(CXXFLAGS) -shared -I $(SRCDIR) -I external/pybind11/include `python-config --cflags --ldflags` $(SRCDIR)/pcst_fast_pybind.cc $(SRCDIR)/pcst_fast.cc -o pcst_fast.so
 
 
 

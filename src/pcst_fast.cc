@@ -70,6 +70,9 @@ PCSTFast::PCSTFast(const std::vector<std::pair<int, int> >& edges_,
     eps = 1e-10;
 
     for (int ii = 0; ii < static_cast<int>(prizes.size()); ++ii) {
+      if (prizes[ii] < 0.0) {
+        throw std::invalid_argument("Prize negative.");
+      }
       clusters.push_back(Cluster(&pairing_heap_buffer));
       clusters[ii].active = (ii != root);
       clusters[ii].active_start_time = 0.0;
@@ -97,7 +100,17 @@ PCSTFast::PCSTFast(const std::vector<std::pair<int, int> >& edges_,
   for (int ii = 0; ii < static_cast<int>(edges.size()); ++ii) {
     int uu = edges[ii].first;
     int vv = edges[ii].second;
+    if (uu < 0 || vv < 0) {
+      throw std::invalid_argument("Edge endpoint negative.");
+    }
+    if (uu >= static_cast<int>(prizes.size())
+        || vv >= static_cast<int>(prizes.size())) {
+      throw std::invalid_argument("Edge endpoint out of range (too large).");
+    }
     double cost = costs[ii];
+    if (cost < 0.0) {
+      throw std::invalid_argument("Edge cost negative.");
+    }
     EdgePart& uu_part = edge_parts[2 * ii];
     EdgePart& vv_part = edge_parts[2 * ii + 1];
     Cluster& uu_cluster = clusters[uu];
