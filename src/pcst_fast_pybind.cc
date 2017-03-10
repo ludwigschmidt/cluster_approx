@@ -24,6 +24,14 @@ std::pair<py::array_t<int>, py::array_t<int>> pcst_fast(
     int num_clusters,
     const std::string& pruning,
     int verbosity_level) {
+  int target_num_active_clusters = num_clusters;
+  if (root >= 0 && num_clusters != 1) {
+    throw std::invalid_argument("In the rooted case, only one output cluster "
+                                "is supported.");
+  }
+  if (root >= 0) {
+    target_num_active_clusters = 0;
+  }
   py::buffer_info edges_info = edges.request();
   if (edges_info.ndim != 2) {
     throw std::invalid_argument("Edges must be a two-dimensional array.");
@@ -83,8 +91,9 @@ std::pair<py::array_t<int>, py::array_t<int>> pcst_fast(
   
   PCSTFast::PruningMethod pruning_method =
       PCSTFast::parse_pruning_method(pruning);
-  PCSTFast algo(tmp_edges, tmp_prizes, tmp_costs, root, num_clusters,
-                pruning_method, verbosity_level, output_function);
+  PCSTFast algo(tmp_edges, tmp_prizes, tmp_costs, root,
+                target_num_active_clusters, pruning_method, verbosity_level,
+                output_function);
   std::vector<int> result_nodes;
   std::vector<int> result_edges;
   algo.run(&result_nodes, &result_edges);

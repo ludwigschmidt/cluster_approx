@@ -431,7 +431,7 @@ bool PCSTFast::run(std::vector<int>* result_nodes,
         continue;
       }
 
-      if (remainder < eps * current_edge_cost) {
+      if (remainder < eps * current_edge_cost || remainder == 0.0) {
         stats.total_num_merge_events += 1;
 
         phase1_result.push_back(next_edge_part_index / 2);

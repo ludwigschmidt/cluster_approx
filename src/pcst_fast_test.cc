@@ -468,3 +468,21 @@ TEST(PCSTFastTest, Simple7TestUnrootedGWPruning) {
   RunAlgo(edges, prizes, costs, root, target_num_active_clusters, pruning,
           node_result, edge_result);
 }
+
+
+TEST(PCSTFastTest, Simple8TestUnrootedStrongPruning) {
+  vector<pair<int, int> > edges;
+  edges.push_back(make_pair(0, 1));
+  edges.push_back(make_pair(1, 2));
+  const double prizes[] = {2, 2, 2};
+  const double costs[] = {0, 5};
+  int root = -1;
+  int target_num_active_clusters = 1;
+  PCSTFast::PruningMethod pruning = PCSTFast::kStrongPruning;
+
+  const int node_result[] = {0, 1};
+  const int edge_result[] = {0};
+
+  RunAlgo(edges, prizes, costs, root, target_num_active_clusters, pruning,
+          node_result, edge_result);
+}
